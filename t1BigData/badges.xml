@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<badges>
+  <row Id="2" UserId="1" Name="Autobiographer" Date="2009-04-30T07:04:34.703" />
+  <row Id="3" UserId="2" Name="Autobiographer" Date="2009-04-30T07:04:34.703" />
+  <row Id="4" UserId="3" Name="Autobiographer" Date="2009-04-30T07:04:34.703" />
+  <row Id="5" UserId="21" Name="Autobiographer" Date="2009-04-30T07:09:21.820" />
+  <row Id="6" UserId="1" Name="Student" Date="2009-04-30T07:49:21.663" />
+  <row Id="7" UserId="3" Name="Student" Date="2009-04-30T07:49:21.680" />
+  <row Id="8" UserId="22" Name="Student" Date="2009-04-30T07:49:21.680" />
+  <row Id="9" UserId="1" Name="Supporter" Date="2009-04-30T07:49:21.710" />
+</badges>
