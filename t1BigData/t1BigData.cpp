@@ -38,78 +38,130 @@ struct letter_only: std::ctype<char>
     }
 };
 
-/*class Badges
+void loadfile(const char* filename)
 {
-public:
-	Badges()
-	{
 
-	};
-	void SetRow(const std::string& name, const std::string value)
-	{
-		rows[name] = value;
-	}
-private:
-	int Id;
-	int UserId;
-	string Name;
-	string Date;
+}
 
-	map< string, string > rows;
-	friend class boost::serialization::access;
-
-	template<class archive>
-
-	void serialize(archive& ar, const unsigned int version)
-	{
-		using boost::serialization::make_nvp;
-		ar & make_nvp("row",rows);
-		ar & BOOST_SERIALIZATION_NVP(Id);
-		ar & BOOST_SERIALIZATION_NVP(UserId);
-		ar & BOOST_SERIALIZATION_NVP(Name);
-		ar & BOOST_SERIALIZATION_NVP(Date);
-	}
-};
-*/
 int main( int argc, char ** argv )
 {
+	std::map<std::string, int> wordCount_sf,wordCount_wp;
 
-	std::map<std::string, int> wordCount;
-	ifstream input;
-	input.imbue(std::locale(std::locale(), new letter_only())); //enable reading only letters!
-	input.open("filename.txt");
-	std::string word;
-	while(input >> word)
+	/****** leer *******/
+	/*pugi::xml_document doc;
+
+	pugi::xml_parse_result result = doc.load_file("badges.xml");
+
+	pugi::xml_node badges_test = doc.child("badges");
+
+	for (pugi::xml_node_iterator it = badges_test.begin(); it != badges_test.end(); ++it)
 	{
-		++wordCount[word];
-	}
-	for (std::map<std::string, int>::iterator it = wordCount.begin(); it != wordCount.end(); ++it)
+		//cout << "Tool:";
+		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
+		{
+			//if(ait->name()=="")
+				cout << " " << ait->name() << "=" << ait->value();
+		}
+		cout << endl;
+	}*/
+
+	pugi::xml_document doc_posts_sf,doc_posts_wp;
+
+	pugi::xml_parse_result result_posts_sf = doc_posts_sf.load_file("./serverfault/Posts.xml");
+	pugi::xml_parse_result result_posts_wp = doc_posts_wp.load_file("./wordpress/Posts.xml");
+
+	cout<<"Posts"<<endl;
+
+	pugi::xml_node posts_node_sf = doc_posts_sf.child("posts");
+	pugi::xml_node posts_node_wp = doc_posts_wp.child("posts");
+
+	for (pugi::xml_node_iterator it = posts_node_sf.begin(); it != posts_node_sf.end(); ++it)
 	{
-		cout << it->first <<" : "<< it->second << endl;
+		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
+		{
+			string name = ait->name();
+			if(name=="Body")
+			{
+				stringstream ss;
+
+				ss.imbue(std::locale(std::locale(), new letter_only())); //enable reading only letters!
+
+				ss << ait->value();
+				string word;
+				while(ss >> word)
+				{
+					++wordCount_sf[word];
+				}
+			}
+		}
 	}
 
+	result_posts_sf = doc_posts_sf.load_file("./serverfault/PostsHistory.xml");
+	posts_node_sf = doc_posts_sf.child("posthistory");
+	cout<<"History"<<endl;
+	for (pugi::xml_node_iterator it = posts_node_sf.begin(); it != posts_node_sf.end(); ++it)
+	{
+		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
+		{
+			string name = ait->name();
+			if(name=="Text")
+			{
+				stringstream ss;
 
-	pugi::xml_document doc;
+				ss.imbue(std::locale(std::locale(), new letter_only())); //enable reading only letters!
 
-	    pugi::xml_parse_result result = doc.load_file("badges.xml");
+				ss << ait->value();
+				string word;
+				while(ss >> word)
+				{
+					++wordCount_sf[word];
+				}
+			}
+		}
+	}
 
-	    //std::cout << "Load result: " << result.description() << ", mesh name: " << doc.child("badges").child("row").attribute("Name").value() << std::endl;
+	result_posts_sf = doc_posts_sf.load_file("./serverfault/Comments.xml");
+	posts_node_sf = doc_posts_sf.child("comments");
+		cout<<"Comments"<<endl;
+		for (pugi::xml_node_iterator it = posts_node_sf.begin(); it != posts_node_sf.end(); ++it)
+		{
+			for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
+			{
+				string name = ait->name();
+				if(name=="Text")
+				{
+					stringstream ss;
 
-	   // if (!doc.load_file("badges.xml")) return -1;
+					ss.imbue(std::locale(std::locale(), new letter_only())); //enable reading only letters!
 
-	   pugi::xml_node tools = doc.child("badges");
-	   //cout<< tools.
+					ss << ait->value();
+					string word;
+					while(ss >> word)
+					{
+						++wordCount_sf[word];
+					}
+				}
+			}
+		}
 
-	   for (pugi::xml_node_iterator it = tools.begin(); it != tools.end(); ++it)
-	   {
-		   cout << "Tool:";
+	/***** fin leer   */
+	cout<<"SF"<<endl;
+	ofstream csvfile_sf ("sf_frequency.csv");
+	csvfile_sf << "'Word'; 'Frequency' " << endl;
+	for (std::map<std::string, int>::iterator it = wordCount_sf.begin(); it != wordCount_sf.end(); ++it)
+	{
+		csvfile_sf << it->first <<" ; "<< it->second << endl;
+	}
+	csvfile_sf.close();
+	cout<<"WP"<<endl;
+	ofstream csvfile_wp ("wp_frequency.csv");
+	csvfile_wp << "'Word'; 'Frequency' " << endl;
+	for (std::map<std::string, int>::iterator it = wordCount_wp.begin(); it != wordCount_wp.end(); ++it)
+	{
+		csvfile_wp << it->first <<" ; "<< it->second << endl;
+	}
+	csvfile_wp.close();
 
-		   for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
-		   {
-			   cout << " " << ait->name() << "=" << ait->value();
-		   }
-		   cout << endl;
-	   }
-	   cout << "Sali "<<endl;
-	return 0;
+	cout<<"Exit"<<endl;
+	return EXIT_SUCCESS;
 }
