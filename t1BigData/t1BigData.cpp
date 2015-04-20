@@ -15,11 +15,14 @@
 #include <utility>
 #include <string.h>
 #include "pugixml.hpp"
+#include  <boost/unordered_map.hpp>
+/*
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/archive/xml_iarchive.hpp>
+*/
 
 using namespace std;
 using namespace boost;
@@ -38,14 +41,10 @@ struct letter_only: std::ctype<char>
     }
 };
 
-void loadfile(const char* filename)
-{
-
-}
-
 int main( int argc, char ** argv )
 {
-	std::map<std::string, int> wordCount_sf,wordCount_wp,tagCount_sf;
+	std::map<std::string, int> stl_wordCount_sf,stl_wordCount_wp,stl_tagCount_sf;
+	typedef boost::unordered_map<std::string, int> b_wordCount_sf;
 
 	pugi::xml_document doc_posts_sf,doc_posts_wp;
 
@@ -74,7 +73,7 @@ int main( int argc, char ** argv )
 				string word;
 				while(ss >> word)
 				{
-					++wordCount_sf[word];
+					++stl_wordCount_sf[word];
 				}
 			}
 			if(name=="")
@@ -102,7 +101,7 @@ int main( int argc, char ** argv )
 				string word;
 				while(ss >> word)
 				{
-					++wordCount_sf[word];
+					++stl_wordCount_sf[word];
 				}
 			}
 		}
@@ -126,7 +125,7 @@ int main( int argc, char ** argv )
 				string word;
 				while(ss >> word)
 				{
-					++wordCount_sf[word];
+					++stl_wordCount_sf[word];
 				}
 			}
 		}
@@ -152,7 +151,7 @@ int main( int argc, char ** argv )
 					int value = stoi( svalue );
 					//cout<<name<<" "<<value<<endl;
 
-					tagCount_sf[name]=value;
+					stl_tagCount_sf[name]=value;
 				}
 			}
 		}
@@ -170,7 +169,7 @@ int main( int argc, char ** argv )
 	cout<<"SF"<<endl;
 	ofstream csvfile_freq_sf ("WordFrequency_SF.csv");
 	csvfile_freq_sf << "Word; Frequency " << endl;
-	for (std::map<std::string, int>::iterator it = wordCount_sf.begin(); it != wordCount_sf.end(); ++it)
+	for (std::map<std::string, int>::iterator it = stl_wordCount_sf.begin(); it != stl_wordCount_sf.end(); ++it)
 	{
 		csvfile_freq_sf << it->first <<" ; "<< it->second << endl;
 	}
@@ -178,7 +177,7 @@ int main( int argc, char ** argv )
 
 	ofstream csvfile_tagfreq_sf ("TagFrequency_SF.csv");
 	csvfile_tagfreq_sf << "Tag; Frequency " << endl;
-	for (std::map<std::string, int>::iterator it = tagCount_sf.begin(); it != tagCount_sf.end(); ++it)
+	for (std::map<std::string, int>::iterator it = stl_tagCount_sf.begin(); it != stl_tagCount_sf.end(); ++it)
 	{
 		csvfile_tagfreq_sf << it->first <<" ; "<< it->second << endl;
 	}
@@ -189,7 +188,7 @@ int main( int argc, char ** argv )
 	cout<<"WP"<<endl;
 	ofstream csvfile_freq_wp ("WordFrequency_WP.csv");
 	csvfile_freq_wp << "Word; Frequency " << endl;
-	for (std::map<std::string, int>::iterator it = wordCount_wp.begin(); it != wordCount_wp.end(); ++it)
+	for (std::map<std::string, int>::iterator it = stl_wordCount_wp.begin(); it != stl_wordCount_wp.end(); ++it)
 	{
 		csvfile_freq_wp << it->first <<" ; "<< it->second << endl;
 	}
