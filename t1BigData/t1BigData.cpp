@@ -19,11 +19,15 @@
 #include <boost/unordered_map.hpp>
 #include <boost/lexical_cast.hpp>
 #include "boost/tuple/tuple.hpp"
+#include "sys/times.h"
+#include "sys/vtimes.h"
 
 using namespace std;
 using namespace boost;
 
 static const int MAX = 3;
+static clock_t lastCPU, lastSysCPU, lastUserCPU;
+static int numProcessors;
 
 map<string,map<string, int> > stl_wordCount,stl_tagCount;
 map<string,map< int, int> > stl_postAnswer,stl_postScore,stl_userReputation,stl_userAboutMeWords;
@@ -54,6 +58,96 @@ struct letter_only: std::ctype<char>
         return &rc[0];
     }
 };
+
+void init(){
+    FILE* file;
+    struct tms timeSample;
+    char line[128];
+
+    lastCPU = times(&timeSample);
+    lastSysCPU = timeSample.tms_stime;
+    lastUserCPU = timeSample.tms_utime;
+
+    file = fopen("/proc/cpuinfo", "r");
+    numProcessors = 0;
+    while(fgets(line, 128, file) != NULL){
+        if (strncmp(line, "processor", 9) == 0) numProcessors++;
+    }
+    fclose(file);
+}
+
+
+double getCurrentCPUValue(){
+    struct tms timeSample;
+    clock_t now;
+    double percent;
+
+
+    now = times(&timeSample);
+    if (now <= lastCPU || timeSample.tms_stime < lastSysCPU ||
+        timeSample.tms_utime < lastUserCPU){
+        //Overflow detection. Just skip this value.
+        percent = -1.0;
+    }
+    else{
+        percent = (timeSample.tms_stime - lastSysCPU) +
+            (timeSample.tms_utime - lastUserCPU);
+        percent /= (now - lastCPU);
+        percent /= numProcessors;
+        percent *= 100;
+    }
+    lastCPU = now;
+    lastSysCPU = timeSample.tms_stime;
+    lastUserCPU = timeSample.tms_utime;
+
+    return percent;
+}
+
+int parseLine(char* line)
+{
+	int i = strlen(line);
+	while (*line < '0' || *line > '9') line++;
+	line[i-3] = '\0';
+	i = atoi(line);
+	return i;
+}
+
+
+int getVMValue(){ //Note: this value is in KB!
+	FILE* file = fopen("/proc/self/status", "r");
+	int result = -1;
+	char line[128];
+
+
+	while (fgets(line, 128, file) != NULL)
+	{
+		if (strncmp(line, "VmSize:", 7) == 0)
+		{
+			result = parseLine(line);
+			break;
+		}
+	}
+	fclose(file);
+	return result;
+}
+int getRAMValue(){ //Note: this value is in KB!
+	FILE* file = fopen("/proc/self/status", "r");
+	int result = -1;
+	char line[128];
+
+
+	while (fgets(line, 128, file) != NULL)
+	{
+		if (strncmp(line, "VmRSS:", 6) == 0)
+		{
+			result = parseLine(line);
+			break;
+		}
+	}
+	fclose(file);
+	return result;
+}
+
 
 void loadPosts(string site)
 {
@@ -106,8 +200,6 @@ void loadPosts(string site)
 	}
 	cout<< contador<<" "<<site<<endl;
 }
-
-
 
 void loadPostsHistory(string site)
 {
@@ -859,17 +951,30 @@ void writePostVotes_boost(string site)
 
 int main( int argc, char ** argv )
 {
+	time_t current_time;
+	char* c_time_string=ctime(&current_time);
+	string filename="Log"+string(c_time_string)+".log";
+	ofstream log (filename.c_str());
+	log<<"Virtual [kB]; RAM;CPU"<<endl;
 	clock_t begin = clock();
 	//pugi::xml_document doc_sf,doc_wp;
 	string fromSite="serverfault";
 	loadPosts(fromSite);
+	log<<getVMValue()<<";"<<getRAMValue()<<";"<<getCurrentCPUValue()<<endl;
 	loadPostsHistory(fromSite);
+	log<<getVMValue()<<";"<<getRAMValue()<<";"<<getCurrentCPUValue()<<endl;
 	loadComments(fromSite);
+	log<<getVMValue()<<";"<<getRAMValue()<<";"<<getCurrentCPUValue()<<endl;
 	loadUsers(fromSite);
+	log<<getVMValue()<<";"<<getRAMValue()<<";"<<getCurrentCPUValue()<<endl;
 	loadTags(fromSite);
+	log<<getVMValue()<<";"<<getRAMValue()<<";"<<getCurrentCPUValue()<<endl;
 	loadBadges(fromSite);
+	log<<getVMValue()<<";"<<getRAMValue()<<";"<<getCurrentCPUValue()<<endl;
 	loadVotes(fromSite);
+	log<<getVMValue()<<";"<<getRAMValue()<<";"<<getCurrentCPUValue()<<endl;
 
+	log.close();
 	writeWordFrequency(fromSite);
 	writeTagFrequency(fromSite);
 	writePostScore(fromSite);
