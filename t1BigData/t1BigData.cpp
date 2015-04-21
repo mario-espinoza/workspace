@@ -330,7 +330,7 @@ void loadPostsHistory_boost(string site)
 				string word;
 				while(ss >> word)
 				{
-					++stl_wordCount[site][word];
+					++b_wordCount[site][word];
 				}
 			}
 			if(name=="CreationDate")
@@ -417,7 +417,7 @@ void loadComments_boost(string site)
 				string word;
 				while(ss >> word)
 				{
-					++stl_wordCount[site][word];
+					++b_wordCount[site][word];
 				}
 			}
 			if(name=="CreationDate")
@@ -512,7 +512,7 @@ void loadUsers_boost(string site)
 			if(sname=="Reputation")
 			{
 				reputation=boost::lexical_cast<int>(ait->value());
-				stl_userReputation[site][id]=reputation;
+				b_userReputation[site][id]=reputation;
 			}
 			if(sname=="AboutMe")
 			{
@@ -525,7 +525,7 @@ void loadUsers_boost(string site)
 				{
 					++aboutWordsCount;
 				}
-				stl_userAboutMeWords[site][id]=aboutWordsCount;
+				b_userAboutMeWords[site][id]=aboutWordsCount;
 			}
 		}
 		contador++;
@@ -598,7 +598,7 @@ void loadTags_boost(string site)
 				string svalue=ait->value();
 				int value = boost::lexical_cast<int>( svalue );
 
-				stl_tagCount[site][name]=value;
+				b_tagCount[site][name]=value;
 			}
 		}
 		contador++;
@@ -766,7 +766,7 @@ void writeWordFrequency(string site)
 	csvfile_freq << "Word; Frequency " << endl;
 	for (std::map<std::string, int>::iterator it = stl_wordCount[site].begin(); it != stl_wordCount[site].end(); ++it)
 	{
-		csvfile_freq << it->first <<" ; "<< it->second << endl;
+		csvfile_freq << it->first <<";"<< it->second << endl;
 	}
 	csvfile_freq.close();
 }
@@ -777,7 +777,7 @@ void writeWordFrequency_boost(string site)
 	csvfile_freq << "Word; Frequency " << endl;
 	for (auto it = b_wordCount[site].begin(); it != b_wordCount[site].end(); ++it)
 	{
-			csvfile_freq << it->first <<" ; "<< it->second << endl;
+			csvfile_freq << it->first <<";"<< it->second << endl;
 	}
 	csvfile_freq.close();
 }
@@ -789,7 +789,7 @@ void writePostTime(string site)
 	csvfile << "Post; Time " << endl;
 	for (auto it = stl_postTime[site].begin(); it != stl_postTime[site].end(); ++it)
 	{
-		csvfile << it->first <<" ; "<< it->second << endl;
+		csvfile << it->first <<";"<< it->second << endl;
 	}
 	csvfile.close();
 }
@@ -800,7 +800,7 @@ void writePostTime_boost(string site)
 	csvfile << "Post; Time " << endl;
 	for (auto it = b_postTime[site].begin(); it != b_postTime[site].end(); ++it)
 	{
-		csvfile << it->first <<" ; "<< it->second << endl;
+		csvfile << it->first <<";"<< it->second << endl;
 	}
 	csvfile.close();
 }
@@ -812,7 +812,7 @@ void writeTagFrequency(string site)
 	csvfile_tagfreq << "Tag;Frequency" << endl;
 	for (auto it = stl_tagCount[site].begin(); it != stl_tagCount[site].end(); ++it)
 	{
-		csvfile_tagfreq << it->first <<" ; "<< it->second << endl;
+		csvfile_tagfreq << it->first <<";"<< it->second << endl;
 	}
 	csvfile_tagfreq.close();
 }
@@ -835,7 +835,7 @@ void writePostScore(string site)
 	csvfile_postScore << "Post;Score " << endl;
 	for (std::map<int , int>::iterator it = stl_postScore[site].begin(); it != stl_postScore[site].end(); ++it)
 	{
-		csvfile_postScore << it->first <<" ; "<< it->second << endl;
+		csvfile_postScore << it->first <<";"<< it->second << endl;
 	}
 	csvfile_postScore.close();
 }
@@ -846,30 +846,30 @@ void writePostScore_boost(string site)
 	csvfile_postScore << "Post;Score " << endl;
 	for (auto it = b_postScore[site].begin(); it != b_postScore[site].end(); ++it)
 	{
-		csvfile_postScore << it->first <<" ; "<< it->second << endl;
+		csvfile_postScore << it->first <<";"<< it->second << endl;
 	}
 	csvfile_postScore.close();
 }
 
 void writeUserAge(string site)
 {
-	string filename="UserAge"+site+".csv";
+	string filename="UserAge_"+site+".csv";
 	ofstream csvfile_postScore (filename.c_str());
 	csvfile_postScore << "User;Age " << endl;
 	for (std::map<int , int>::iterator it = stl_postScore[site].begin(); it != stl_postScore[site].end(); ++it)
 	{
-		csvfile_postScore << it->first <<" ; "<< it->second << endl;
+		csvfile_postScore << it->first <<";"<< it->second << endl;
 	}
 	csvfile_postScore.close();
 }
 void writeUserAge_boost(string site)
 {
-	string filename="UserAge"+site+"_boost.csv";
+	string filename="UserAge_"+site+"_boost.csv";
 	ofstream csvfile_postScore (filename.c_str());
 	csvfile_postScore << "User;Age " << endl;
 	for (auto it = b_postScore[site].begin(); it != b_postScore[site].end(); ++it)
 	{
-		csvfile_postScore << it->first <<" ; "<< it->second << endl;
+		csvfile_postScore << it->first <<";"<< it->second << endl;
 	}
 	csvfile_postScore.close();
 }
@@ -889,10 +889,10 @@ void writePostAnswer_boost(string site)
 {
 	string filename="PostAnswer_"+site+"_boost.csv";
 	ofstream csvfile_postAnswer (filename.c_str());
-	csvfile_postAnswer << "Post;Answer " << endl;
+	csvfile_postAnswer << "Post;Answer" << endl;
 	for (auto it = b_postAnswer[site].begin(); it != b_postAnswer[site].end(); ++it)
 	{
-		csvfile_postAnswer << it->first <<" ; "<< it->second << endl;
+		csvfile_postAnswer << it->first <<";"<< it->second << endl;
 	}
 	csvfile_postAnswer.close();
 }
@@ -904,7 +904,7 @@ void writeUserAboutMeWords(string site)
 	csvfile_userAboutMeWords_sf << "User;WordCountAboutMe " << endl;
 	for (std::map<int , int>::iterator it = stl_userAboutMeWords[site].begin(); it != stl_userAboutMeWords[site].end(); ++it)
 	{
-		csvfile_userAboutMeWords_sf << it->first <<" ; "<< it->second << endl;
+		csvfile_userAboutMeWords_sf << it->first <<";"<< it->second << endl;
 	}
 	csvfile_userAboutMeWords_sf.close();
 }
@@ -915,7 +915,7 @@ void writeUserAboutMeWords_boost(string site)
 	csvfile_userAboutMeWords_sf << "User;WordCountAboutMe " << endl;
 	for (auto it = b_userAboutMeWords[site].begin(); it != b_userAboutMeWords[site].end(); ++it)
 	{
-		csvfile_userAboutMeWords_sf << it->first <<" ; "<< it->second << endl;
+		csvfile_userAboutMeWords_sf << it->first <<";"<< it->second << endl;
 	}
 	csvfile_userAboutMeWords_sf.close();
 }
@@ -927,7 +927,7 @@ void writePostVotes(string site)
 	csvfile_userAboutMeWords_sf << "Post;Up;Down;Total " << endl;
 	for (std::map<int , int[3]>::iterator it = stl_PostVotes[site].begin(); it != stl_PostVotes[site].end(); ++it)
 	{
-		csvfile_userAboutMeWords_sf << it->first <<" ; "<< it->second[0] <<" ; "<< it->second[1]<<" ; "<< it->second[2] << endl;
+		csvfile_userAboutMeWords_sf << it->first <<";"<< it->second[0] <<";"<< it->second[1]<<";"<< it->second[2] << endl;
 	}
 	csvfile_userAboutMeWords_sf.close();
 }
@@ -938,7 +938,7 @@ void writePostVotes_boost(string site)
 	csvfile_userAboutMeWords_sf << "Post;Up;Down;Total " << endl;
 	for (std::map<int , int[3]>::iterator it = stl_PostVotes[site].begin(); it != stl_PostVotes[site].end(); ++it)
 	{
-		csvfile_userAboutMeWords_sf << it->first <<" ; "<< it->second[0] <<" ; "<< it->second[1]<<" ; "<< it->second[2] << endl;
+		csvfile_userAboutMeWords_sf << it->first <<";"<< it->second[0] <<";"<< it->second[1]<<";"<< it->second[2] << endl;
 	}
 	csvfile_userAboutMeWords_sf.close();
 }
@@ -947,10 +947,10 @@ void writeUserReputation(string site)
 {
 	string filename="UserReputation_"+site+".csv";
 	ofstream csvfile_userReputation (filename.c_str());
-	csvfile_userReputation << "User;Reputation " << endl;
+	csvfile_userReputation << "User;Reputation" << endl;
 	for (std::map<int , int>::iterator it = stl_userReputation[site].begin(); it != stl_userReputation[site].end(); ++it)
 	{
-		csvfile_userReputation << it->first <<" ; "<< it->second << endl;
+		csvfile_userReputation << it->first <<";"<< it->second << endl;
 	}
 	csvfile_userReputation.close();
 }
@@ -958,10 +958,10 @@ void writeUserReputation_boost(string site)
 {
 	string filename="UserReputation_"+site+"_boost.csv";
 	ofstream csvfile_userReputation (filename.c_str());
-	csvfile_userReputation << "User;Reputation " << endl;
+	csvfile_userReputation << "User;Reputation" << endl;
 	for (auto it = b_userReputation[site].begin(); it != b_userReputation[site].end(); ++it)
 	{
-		csvfile_userReputation << it->first <<" ; "<< it->second << endl;
+		csvfile_userReputation << it->first <<";"<< it->second << endl;
 	}
 	csvfile_userReputation.close();
 }
