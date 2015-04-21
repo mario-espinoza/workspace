@@ -14,19 +14,34 @@
 #include <map>
 #include <utility>
 #include <string.h>
+#include <ctime>
 #include "pugixml.hpp"
 #include <boost/unordered_map.hpp>
 #include <boost/lexical_cast.hpp>
-/*
-#include <boost/property_tree/xml_parser.hpp>
-#include <boost/serialization/nvp.hpp>
-#include <boost/serialization/string.hpp>
-#include <boost/serialization/map.hpp>
-#include <boost/archive/xml_iarchive.hpp>
-*/
+#include "boost/tuple/tuple.hpp"
 
 using namespace std;
 using namespace boost;
+
+static const int MAX = 3;
+
+map<string,map<string, int> > stl_wordCount,stl_tagCount;
+map<string,map< int, int> > stl_postAnswer,stl_postScore,stl_userReputation,stl_userAboutMeWords;
+map<string,map< int, vector<string> > > stl_userBadges;
+map<string,map< int, int[3] > > stl_PostVotes;
+
+typedef unordered_map<string,unordered_map<string, int> > umap_1;
+umap_1 b_wordCount,b_tagCount;
+typedef unordered_map<string,unordered_map< int, int> > umap_2;
+umap_2 b_postAnswer,b_postScore,b_userReputation,b_userAboutMeWords;
+typedef unordered_map<string,unordered_map< int, vector<string> > > umap_3;
+umap_3 b_userBadges;
+typedef unordered_map<string,unordered_map< int, boost::array<int, 3>> > umap_4;
+umap_4 b_PostVotes;
+
+pugi::xml_parse_result result;
+pugi::xml_node node;
+pugi::xml_document doc;
 
 struct letter_only: std::ctype<char>
 {
@@ -34,33 +49,32 @@ struct letter_only: std::ctype<char>
 
     static std::ctype_base::mask const* get_table()
     {
-        static std::vector<std::ctype_base::mask>
-            rc(std::ctype<char>::table_size,std::ctype_base::space);
-
+        static std::vector<std::ctype_base::mask> rc(std::ctype<char>::table_size,std::ctype_base::space);
         std::fill(&rc['A'], &rc['z'+1], std::ctype_base::alpha);
         return &rc[0];
     }
 };
 
-int main( int argc, char ** argv )
+void loadPosts(string site)
 {
-	std::map<std::string, int> stl_wordCount_sf,stl_wordCount_wp,stl_tagCount_sf;
-	std::map< int, int> stl_postAnswer_sf,stl_postScore_sf,stl_userReputation_sf,stl_userAboutMeWords_sf;
-	std::map<int, vector<string> > stl_userBadges_sf;
-	typedef boost::unordered_map<std::string, int> b_wordCount_sf;
+	int contador=0;
+	cout<<"Posts "<<site<<endl;
+	string filename="./"+site+"/Posts.xml";
+	result = doc.load_file(filename.c_str());
 
-	pugi::xml_document doc_sf,doc_wp;
+	if(!result)
+	{
+	    cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
+	    cout << "Error description: " << result.description() << "\n";
+	}
 
-	cout<<"Posts SF"<<endl;
-	pugi::xml_parse_result result_sf = doc_sf.load_file("./serverfault/Posts.xml");
-	pugi::xml_node node_sf = doc_sf.child("posts");
+	node = doc.child("posts");
 
-	for (pugi::xml_node_iterator it = node_sf.begin(); it != node_sf.end(); ++it)
+	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
 	{
 		int postId;
 		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
 		{
-
 			string name = ait->name();
 			if(name=="Id")
 			{
@@ -69,37 +83,50 @@ int main( int argc, char ** argv )
 			if(name=="AcceptedAnswerId")
 			{
 				int answer=boost::lexical_cast<int>(ait->value());
-				stl_postAnswer_sf[postId]=answer;
+				stl_postAnswer[site][postId]=answer;
 			}
 			if(name=="Body")
 			{
 				stringstream ss;
-
 				ss.imbue(std::locale(std::locale(), new letter_only())); //enable reading only letters!
-
 				ss << ait->value();
 				string word;
 				while(ss >> word)
 				{
-					++stl_wordCount_sf[word];
+
+					++stl_wordCount[site][word];
 				}
 			}
 			if(name=="Score")
 			{
-				//cout<<postId<<" "<<ait->value()<<endl;
-				stl_postScore_sf[postId]=boost::lexical_cast<int>(ait->value());
+				stl_postScore[site][postId]=boost::lexical_cast<int>(ait->value());
 			}
 		}
+		contador++;
+	}
+	cout<< contador<<" "<<site<<endl;
+}
+
+
+
+void loadPostsHistory(string site)
+{
+	string filename="./"+site+"/PostHistory.xml";
+	result = doc.load_file(filename.c_str());
+
+	if(!result)
+	{
+		cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
+		cout << "Error description: " << result.description() << "\n";
 	}
 
+	node = doc.child("posthistory");
+	cout<<"Post History "<<site<<endl;
 
-
-	result_sf = doc_sf.load_file("./serverfault/PostsHistory.xml");
-	node_sf = doc_sf.child("posthistory");
-	cout<<"Post History SF"<<endl;
-	for (pugi::xml_node_iterator it = node_sf.begin(); it != node_sf.end(); ++it)
+	int contador=0;
+	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
 	{
-		int postId;
+		int postId=0;
 		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
 		{
 			string name = ait->name();
@@ -110,24 +137,36 @@ int main( int argc, char ** argv )
 			if(name=="Text")
 			{
 				stringstream ss;
-
 				ss.imbue(std::locale(std::locale(), new letter_only())); //enable reading only letters!
-
 				ss << ait->value();
 				string word;
 				while(ss >> word)
 				{
-					++stl_wordCount_sf[word];
+					++stl_wordCount[site][word];
 				}
 			}
-
 		}
+		contador++;
+	}
+	cout<< contador<<" "<<site<<endl;
+}
+
+void loadComments(string site)
+{
+	string filename="./"+site+"/Comments.xml";
+	result = doc.load_file(filename.c_str());
+
+	if(!result)
+	{
+		cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
+		cout << "Error description: " << result.description() << "\n";
 	}
 
-	result_sf = doc_sf.load_file("./serverfault/Comments.xml");
-	node_sf = doc_sf.child("comments");
-	cout<<"Comments SF"<<endl;
-	for (pugi::xml_node_iterator it = node_sf.begin(); it != node_sf.end(); ++it)
+	node = doc.child("comments");
+	cout<<"Comments "<<site<<endl;
+
+	int contador=0;
+	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
 	{
 		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
 		{
@@ -135,29 +174,40 @@ int main( int argc, char ** argv )
 			if(name=="Text")
 			{
 				stringstream ss;
-
 				ss.imbue(std::locale(std::locale(), new letter_only())); //enable reading only letters!
-
 				ss << ait->value();
 				string word;
 				while(ss >> word)
 				{
-					++stl_wordCount_sf[word];
+					++stl_wordCount[site][word];
 				}
 			}
 		}
+		contador++;
+	}
+	cout<< contador<<" "<<site<<endl;
+}
+
+void loadUsers (string site)
+{
+	string filename="./"+site+"/Users.xml";
+	result = doc.load_file(filename.c_str());
+
+	if(!result)
+	{
+		cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
+		cout << "Error description: " << result.description() << "\n";
 	}
 
-	result_sf = doc_sf.load_file("./serverfault/Users.xml");
-	node_sf = doc_sf.child("users");
-	cout<<"Users SF"<<endl;
-	for (pugi::xml_node_iterator it = node_sf.begin(); it != node_sf.end(); ++it)
+	int contador=0;
+	node = doc.child("users");
+	cout<<"Users "<<site<<endl;
+	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
 	{
 		int id,reputation,aboutWordsCount;
 		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
 		{
 			string sname = ait->name();
-
 			if(sname=="Id")
 			{
 				id=boost::lexical_cast<int>(ait->value());
@@ -165,32 +215,41 @@ int main( int argc, char ** argv )
 			if(sname=="Reputation")
 			{
 				reputation=boost::lexical_cast<int>(ait->value());
-
-				stl_userReputation_sf[id]=reputation;
+				stl_userReputation[site][id]=reputation;
 			}
 			if(sname=="AboutMe")
 			{
 				aboutWordsCount=0;
 				stringstream ss;
-
 				ss.imbue(std::locale(std::locale(), new letter_only())); //enable reading only letters!
-
 				ss << ait->value();
 				string word;
 				while(ss >> word)
 				{
 					++aboutWordsCount;
 				}
-
-				stl_userAboutMeWords_sf[id]=aboutWordsCount;
+				stl_userAboutMeWords[site][id]=aboutWordsCount;
 			}
 		}
+		contador++;
 	}
+	cout<< contador<<" "<<site<<endl;
+}
 
-	result_sf = doc_sf.load_file("./serverfault/Tags.xml");
-	node_sf = doc_sf.child("tags");
-	cout<<"Tags SF"<<endl;
-	for (pugi::xml_node_iterator it = node_sf.begin(); it != node_sf.end(); ++it)
+void loadTags(string site)
+{
+	string filename = "./"+site+"/Tags.xml";
+	result = doc.load_file(filename.c_str());
+
+	if(!result)
+	{
+		cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
+		cout << "Error description: " << result.description() << "\n";
+	}
+	int contador=0;
+	node = doc.child("tags");
+	cout<<"Tags "<<site<<endl;
+	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
 	{
 		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
 		{
@@ -206,15 +265,29 @@ int main( int argc, char ** argv )
 				string svalue=ait->value();
 				int value = boost::lexical_cast<int>( svalue );
 
-				stl_tagCount_sf[name]=value;
+				stl_tagCount[site][name]=value;
 			}
 		}
+		contador++;
+	}
+	cout<< contador<<" "<<site<<endl;
+}
+
+void loadBadges(string site)
+{
+	string filename="./"+site+ "/Badges.xml";
+	result = doc.load_file(filename.c_str());
+
+	if(!result)
+	{
+		cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
+		cout << "Error description: " << result.description() << "\n";
 	}
 
-	result_sf = doc_sf.load_file("./serverfault/Badges.xml");
-	node_sf = doc_sf.child("badges");
-	cout<<"Badges SF"<<endl;
-	for (pugi::xml_node_iterator it = node_sf.begin(); it != node_sf.end(); ++it)
+	node = doc.child("badges");int contador=0;
+	cout<<"Badges "<<site<<endl;
+
+	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
 	{
 		int id;
 		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
@@ -227,73 +300,445 @@ int main( int argc, char ** argv )
 			if(sname=="Name")
 			{
 				string badge=ait->value();;
-				stl_userBadges_sf[id].push_back (badge);
+
+				stl_userBadges[site][id].push_back (badge);
+			}
+		}
+		contador++;
+	}
+	cout<< contador<<" "<<site<<endl;
+}
+
+void loadVotes(string site)
+{
+	string filename = "./"+site+"/Votes.xml";
+	result = doc.load_file(filename.c_str());
+
+	if(!result)
+	{
+		cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
+		cout << "Error description: " << result.description() << "\n";
+	}
+	//int contador=0;
+	node = doc.child("votes");
+	cout<<"Votes "<<site<<endl;
+	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
+	{
+		int id;
+		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
+		{
+			string sname = ait->name();
+			if(sname=="PostId")
+			{
+				id=boost::lexical_cast<int>(ait->value());
+			}
+			if(sname=="VoteTypeId")
+			{
+				int vote=boost::lexical_cast<int>(ait->value());
+				if(vote==2)
+				{
+					++stl_PostVotes[site][id][0];
+					++stl_PostVotes[site][id][2];
+				}
+				if(vote==3)
+				{
+					++stl_PostVotes[site][id][1];
+					--stl_PostVotes[site][id][2];
+				}
+
 			}
 		}
 	}
+}
 
-	/******* FIN SF ****/
+void loadPosts_boost(string site)
+{
+	int contador=0;
+	cout<<"Posts "<<site<<endl;
+	string filename="./"+site+"/Posts.xml";
+	result = doc.load_file(filename.c_str());
 
-	/****** WP */
+	if(!result)
+	{
+	    cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
+	    cout << "Error description: " << result.description() << "\n";
+	}
 
-	pugi::xml_parse_result result_posts_wp = doc_wp.load_file("./wordpress/Posts.xml");
-	pugi::xml_node posts_node_wp = doc_wp.child("posts");
+	node = doc.child("posts");
+
+	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
+	{
+		int postId;
+		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
+		{
+			string name = ait->name();
+			if(name=="Id")
+			{
+				postId=boost::lexical_cast<int>(ait->value());
+			}
+			if(name=="AcceptedAnswerId")
+			{
+				int answer=boost::lexical_cast<int>(ait->value());
+				b_postAnswer[site][postId]=answer;
+			}
+			if(name=="Body")
+			{
+				stringstream ss;
+				ss.imbue(std::locale(std::locale(), new letter_only())); //enable reading only letters!
+				ss << ait->value();
+				string word;
+				while(ss >> word)
+				{
+
+					++b_wordCount[site][word];
+				}
+			}
+			if(name=="Score")
+			{
+				b_postScore[site][postId]=boost::lexical_cast<int>(ait->value());
+			}
+		}
+		contador++;
+	}
+	cout<< contador<<" "<<site<<endl;
+}
+
+void loadPostsHistory_boost(string site)
+{
+	string filename="./"+site+"/PostHistory.xml";
+	result = doc.load_file(filename.c_str());
+
+	if(!result)
+	{
+		cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
+		cout << "Error description: " << result.description() << "\n";
+	}
+
+	node = doc.child("posthistory");
+	cout<<"Post History "<<site<<endl;
+
+	int contador=0;
+	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
+	{
+		int postId;
+		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
+		{
+			string name = ait->name();
+			if(name=="Id")
+			{
+				postId=boost::lexical_cast<int>(ait->value());
+			}
+			if(name=="Text")
+			{
+				stringstream ss;
+				ss.imbue(std::locale(std::locale(), new letter_only())); //enable reading only letters!
+				ss << ait->value();
+				string word;
+				while(ss >> word)
+				{
+					++stl_wordCount[site][word];
+				}
+			}
+		}
+		contador++;
+	}
+	cout<< contador<<" "<<site<<endl;
+}
+
+void loadComments_boost(string site)
+{
+	string filename="./"+site+"/Comments.xml";
+	result = doc.load_file(filename.c_str());
+
+	if(!result)
+	{
+		cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
+		cout << "Error description: " << result.description() << "\n";
+	}
+
+	node = doc.child("comments");
+	cout<<"Comments "<<site<<endl;
+
+	int contador=0;
+	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
+	{
+		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
+		{
+			string name = ait->name();
+			if(name=="Text")
+			{
+				stringstream ss;
+				ss.imbue(std::locale(std::locale(), new letter_only())); //enable reading only letters!
+				ss << ait->value();
+				string word;
+				while(ss >> word)
+				{
+					++stl_wordCount[site][word];
+				}
+			}
+		}
+		contador++;
+	}
+	cout<< contador<<" "<<site<<endl;
+}
+
+void loadUsers_boost(string site)
+{
+	string filename="./"+site+"/Users.xml";
+	result = doc.load_file(filename.c_str());
+
+	if(!result)
+	{
+		cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
+		cout << "Error description: " << result.description() << "\n";
+	}
+
+	int contador=0;
+	node = doc.child("users");
+	cout<<"Users "<<site<<endl;
+	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
+	{
+		int id,reputation,aboutWordsCount;
+		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
+		{
+			string sname = ait->name();
+			if(sname=="Id")
+			{
+				id=boost::lexical_cast<int>(ait->value());
+			}
+			if(sname=="Reputation")
+			{
+				reputation=boost::lexical_cast<int>(ait->value());
+				stl_userReputation[site][id]=reputation;
+			}
+			if(sname=="AboutMe")
+			{
+				aboutWordsCount=0;
+				stringstream ss;
+				ss.imbue(std::locale(std::locale(), new letter_only())); //enable reading only letters!
+				ss << ait->value();
+				string word;
+				while(ss >> word)
+				{
+					++aboutWordsCount;
+				}
+				stl_userAboutMeWords[site][id]=aboutWordsCount;
+			}
+		}
+		contador++;
+	}
+	cout<< contador<<" "<<site<<endl;
+}
+
+void loadTags_boost(string site)
+{
+	string filename = "./"+site+"/Tags.xml";
+	result = doc.load_file(filename.c_str());
+
+	if(!result)
+	{
+		cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
+		cout << "Error description: " << result.description() << "\n";
+	}
+	int contador=0;
+	node = doc.child("tags");
+	cout<<"Tags "<<site<<endl;
+	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
+	{
+		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
+		{
+			string sname = ait->name();
+			if(sname=="TagName")
+			{
+				string name=ait->value();
+				string count;
+				do {
+					ait++;
+					count = ait->name();
+				} while (count!="Count");
+				string svalue=ait->value();
+				int value = boost::lexical_cast<int>( svalue );
+
+				stl_tagCount[site][name]=value;
+			}
+		}
+		contador++;
+	}
+	cout<< contador<<" "<<site<<endl;
+}
+
+void loadBadges_boost(string site)
+{
+	string filename="./"+site+ "/Badges.xml";
+	result = doc.load_file(filename.c_str());
+
+	if(!result)
+	{
+		cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
+		cout << "Error description: " << result.description() << "\n";
+	}
+
+	node = doc.child("badges");int contador=0;
+	cout<<"Badges "<<site<<endl;
+
+	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
+	{
+		int id;
+		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
+		{
+			string sname = ait->name();
+			if(sname=="UserId")
+			{
+				id=boost::lexical_cast<int>(ait->value());
+			}
+			if(sname=="Name")
+			{
+				string badge=ait->value();;
+
+				stl_userBadges[site][id].push_back (badge);
+			}
+		}
+		contador++;
+	}
+	cout<< contador<<" "<<site<<endl;
+}
+
+void loadVotes_boost(string site)
+{
+	string filename = "./"+site+"/Votes.xml";
+	result = doc.load_file(filename.c_str());
+
+	if(!result)
+	{
+		cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
+		cout << "Error description: " << result.description() << "\n";
+	}
+	//int contador=0;
+	node = doc.child("votes");
+	cout<<"Votes "<<site<<endl;
+	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
+	{
+		int id;
+		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
+		{
+			string sname = ait->name();
+			if(sname=="PostId")
+			{
+				id=boost::lexical_cast<int>(ait->value());
+			}
+			if(sname=="VoteTypeId")
+			{
+				int vote=boost::lexical_cast<int>(ait->value());
+				if(vote==2)
+				{
+					++b_PostVotes[site][id][0];
+					++b_PostVotes[site][id][2];
+				}
+				if(vote==3)
+				{
+					++b_PostVotes[site][id][1];
+					--b_PostVotes[site][id][2];
+				}
+
+			}
+		}
+	}
+}
 
 
-	/***** fin WP   */
+void writeWordFrequency(string site)
+{
 	cout<<"SF"<<endl;
-	ofstream csvfile_freq_sf ("WordFrequency_SF.csv");
-	csvfile_freq_sf << "Word; Frequency " << endl;
-	for (std::map<std::string, int>::iterator it = stl_wordCount_sf.begin(); it != stl_wordCount_sf.end(); ++it)
+	string filename="WordFrequency_"+site+".csv";
+	ofstream csvfile_freq (filename.c_str());
+	csvfile_freq << "Word; Frequency " << endl;
+	for (std::map<std::string, int>::iterator it = stl_wordCount[site].begin(); it != stl_wordCount[site].end(); ++it)
 	{
-		csvfile_freq_sf << it->first <<" ; "<< it->second << endl;
+		csvfile_freq << it->first <<" ; "<< it->second << endl;
 	}
-	csvfile_freq_sf.close();
+	csvfile_freq.close();
+}
 
-	ofstream csvfile_tagfreq_sf ("TagFrequency_SF.csv");
-	csvfile_tagfreq_sf << "Tag; Frequency " << endl;
-	for (std::map<std::string, int>::iterator it = stl_tagCount_sf.begin(); it != stl_tagCount_sf.end(); ++it)
+void writeTagFrequency(string site)
+{
+	string filename="TagFrequency_"+site+".csv";
+	ofstream csvfile_tagfreq (filename.c_str());
+	csvfile_tagfreq << "Tag; Frequency " << endl;
+	for (std::map<std::string, int>::iterator it = stl_tagCount[site].begin(); it != stl_tagCount[site].end(); ++it)
 	{
-		csvfile_tagfreq_sf << it->first <<" ; "<< it->second << endl;
+		csvfile_tagfreq << it->first <<" ; "<< it->second << endl;
 	}
-	csvfile_tagfreq_sf.close();
+	csvfile_tagfreq.close();
+}
 
-	ofstream csvfile_postScore_sf ("PostScore_SF.csv");
-	csvfile_postScore_sf << "Post;Score " << endl;
-	for (std::map<int , int>::iterator it = stl_postScore_sf.begin(); it != stl_postScore_sf.end(); ++it)
+void writePostScore(string site)
+{
+	string filename="PostScore_"+site+".csv";
+	ofstream csvfile_postScore (filename.c_str());
+	csvfile_postScore << "Post;Score " << endl;
+	for (std::map<int , int>::iterator it = stl_postScore[site].begin(); it != stl_postScore[site].end(); ++it)
 	{
-		csvfile_postScore_sf << it->first <<" ; "<< it->second << endl;
+		csvfile_postScore << it->first <<" ; "<< it->second << endl;
 	}
-	csvfile_postScore_sf.close();
+	csvfile_postScore.close();
+}
 
-	ofstream csvfile_postAnswer_sf ("PostAnswer_SF.csv");
-	csvfile_postAnswer_sf << "Post;Answer " << endl;
-	for (std::map<int , int>::iterator it = stl_postAnswer_sf.begin(); it != stl_postAnswer_sf.end(); ++it)
+void writePostAnswer(string site)
+{
+	string filename="PostAnswer_"+site+".csv";
+	ofstream csvfile_postAnswer (filename.c_str());
+	csvfile_postAnswer << "Post;Answer " << endl;
+	for (std::map<int , int>::iterator it = stl_postAnswer[site].begin(); it != stl_postAnswer[site].end(); ++it)
 	{
-		csvfile_postAnswer_sf << it->first <<" ; "<< it->second << endl;
+		csvfile_postAnswer << it->first <<" ; "<< it->second << endl;
 	}
-	csvfile_postAnswer_sf.close();
+	csvfile_postAnswer.close();
+}
 
-	ofstream csvfile_userReputation_sf ("UserReputation_SF.csv");
-	csvfile_userReputation_sf << "User;Reputation " << endl;
-	for (std::map<int , int>::iterator it = stl_userReputation_sf.begin(); it != stl_userReputation_sf.end(); ++it)
+void writeUserReputation(string site)
+{
+	string filename="UserReputation_"+site+".csv";
+	ofstream csvfile_userReputation (filename.c_str());
+	csvfile_userReputation << "User;Reputation " << endl;
+	for (std::map<int , int>::iterator it = stl_userReputation[site].begin(); it != stl_userReputation[site].end(); ++it)
 	{
-		csvfile_userReputation_sf << it->first <<" ; "<< it->second << endl;
+		csvfile_userReputation << it->first <<" ; "<< it->second << endl;
 	}
-	csvfile_userReputation_sf.close();
+	csvfile_userReputation.close();
+}
 
-	ofstream csvfile_userAboutMeWords_sf ("UserAboutMeWords_SF.csv");
+void writeUserAboutMeWords(string site)
+{
+	string filename="UserAboutMeWords_"+site+".csv";
+	ofstream csvfile_userAboutMeWords_sf (filename.c_str());
 	csvfile_userAboutMeWords_sf << "User;WordCountAboutMe " << endl;
-	for (std::map<int , int>::iterator it = stl_userAboutMeWords_sf.begin(); it != stl_userAboutMeWords_sf.end(); ++it)
+	for (std::map<int , int>::iterator it = stl_userAboutMeWords[site].begin(); it != stl_userAboutMeWords[site].end(); ++it)
 	{
 		csvfile_userAboutMeWords_sf << it->first <<" ; "<< it->second << endl;
 	}
 	csvfile_userAboutMeWords_sf.close();
+}
 
-	ofstream csvfile_userBadges_sf ("UserBadges_SF.csv");
-	ofstream csvfile_userBadgeCount_sf ("UserBadgeCount_SF.csv");
+void writePostVotes(string site)
+{
+	string filename="PostVotes_"+site+".csv";
+	ofstream csvfile_userAboutMeWords_sf (filename.c_str());
+	csvfile_userAboutMeWords_sf << "Post;Up;Down;Total " << endl;
+	for (std::map<int , int[3]>::iterator it = stl_PostVotes[site].begin(); it != stl_PostVotes[site].end(); ++it)
+	{
+		csvfile_userAboutMeWords_sf << it->first <<" ; "<< it->second[0] <<" ; "<< it->second[1]<<" ; "<< it->second[2] << endl;
+	}
+	csvfile_userAboutMeWords_sf.close();
+}
+
+void writeBadges(string site)
+{
+	string filename1="UserBadges_"+site+".csv";
+	ofstream csvfile_userBadges_sf (filename1.c_str());
+	string filename2="UserBadgeCount_"+site+".csv";
+	ofstream csvfile_userBadgeCount_sf (filename2.c_str());
 	csvfile_userBadges_sf << "User;Badge " << endl;
-	for (std::map<int , vector<string>>::iterator it = stl_userBadges_sf.begin(); it != stl_userBadges_sf.end(); ++it)
+	for (std::map<int , vector<string>>::iterator it = stl_userBadges[site].begin(); it != stl_userBadges[site].end(); ++it)
 	{
 		vector<string> badges=it->second;
 		csvfile_userBadgeCount_sf<< it->first <<" ; "<< badges.size() << endl;
@@ -305,16 +750,201 @@ int main( int argc, char ** argv )
 	}
 	csvfile_userBadges_sf.close();
 	csvfile_userBadgeCount_sf.close();
+}
 
-	cout<<"WP"<<endl;
-	ofstream csvfile_freq_wp ("WordFrequency_WP.csv");
-	csvfile_freq_wp << "Word; Frequency " << endl;
-	for (std::map<std::string, int>::iterator it = stl_wordCount_wp.begin(); it != stl_wordCount_wp.end(); ++it)
+void writeWordFrequency_boost(string site)
+{
+	string filename="WordFrequency_"+site+"_boost.csv";
+	ofstream csvfile_freq (filename.c_str());
+	csvfile_freq << "Word; Frequency " << endl;
+	for (auto it = b_wordCount[site].begin(); it != b_wordCount[site].end(); ++it)
 	{
-		csvfile_freq_wp << it->first <<" ; "<< it->second << endl;
+			csvfile_freq << it->first <<" ; "<< it->second << endl;
 	}
-	csvfile_freq_wp.close();
+	csvfile_freq.close();
+}
 
-	cout<<"Exit"<<endl;
+void writeTagFrequency_boost(string site)
+{
+	string filename="TagFrequency_"+site+"_boost.csv";
+	ofstream csvfile_tagfreq (filename.c_str());
+	csvfile_tagfreq << "Tag; Frequency " << endl;
+	for (auto it = b_tagCount[site].begin(); it != b_tagCount[site].end(); ++it)
+	{
+		csvfile_tagfreq << it->first <<" ; "<< it->second << endl;
+	}
+	csvfile_tagfreq.close();
+}
+
+void writePostScore_boost(string site)
+{
+	string filename="PostScore_"+site+"_boost.csv";
+	ofstream csvfile_postScore (filename.c_str());
+	csvfile_postScore << "Post;Score " << endl;
+	for (auto it = b_postScore[site].begin(); it != b_postScore[site].end(); ++it)
+	{
+		csvfile_postScore << it->first <<" ; "<< it->second << endl;
+	}
+	csvfile_postScore.close();
+}
+
+void writePostAnswer_boost(string site)
+{
+	string filename="PostAnswer_"+site+"_boost.csv";
+	ofstream csvfile_postAnswer (filename.c_str());
+	csvfile_postAnswer << "Post;Answer " << endl;
+	for (auto it = b_postAnswer[site].begin(); it != b_postAnswer[site].end(); ++it)
+	{
+		csvfile_postAnswer << it->first <<" ; "<< it->second << endl;
+	}
+	csvfile_postAnswer.close();
+}
+
+void writeUserReputation_boost(string site)
+{
+	string filename="UserReputation_"+site+"_boost.csv";
+	ofstream csvfile_userReputation (filename.c_str());
+	csvfile_userReputation << "User;Reputation " << endl;
+	for (auto it = b_userReputation[site].begin(); it != b_userReputation[site].end(); ++it)
+	{
+		csvfile_userReputation << it->first <<" ; "<< it->second << endl;
+	}
+	csvfile_userReputation.close();
+}
+
+void writeUserAboutMeWords_boost(string site)
+{
+	string filename="UserAboutMeWords_"+site+"_boost.csv";
+	ofstream csvfile_userAboutMeWords_sf (filename.c_str());
+	csvfile_userAboutMeWords_sf << "User;WordCountAboutMe " << endl;
+	for (auto it = b_userAboutMeWords[site].begin(); it != b_userAboutMeWords[site].end(); ++it)
+	{
+		csvfile_userAboutMeWords_sf << it->first <<" ; "<< it->second << endl;
+	}
+	csvfile_userAboutMeWords_sf.close();
+}
+
+void writeBadges_boost(string site)
+{
+	string filename1="UserBadges_"+site+"_boost.csv";
+	ofstream csvfile_userBadges (filename1.c_str());
+	string filename2="UserBadgeCount_"+site+"_boost.csv";
+	ofstream csvfile_userBadgeCount (filename2.c_str());
+	csvfile_userBadges << "User;Badge " << endl;
+	for (auto it = stl_userBadges[site].begin(); it != stl_userBadges[site].end(); ++it)
+	{
+		vector<string> badges=it->second;
+		csvfile_userBadgeCount<< it->first <<" ; "<< badges.size() << endl;
+		for (auto it2 = badges.begin(); it2 != badges.end(); ++it2)
+		{
+			csvfile_userBadges << it->first <<" ; "<< *it2 << endl;
+		}
+
+	}
+	csvfile_userBadges.close();
+	csvfile_userBadgeCount.close();
+}
+
+void writePostVotes_boost(string site)
+{
+	string filename="PostVotes_"+site+"_boost.csv";
+	ofstream csvfile_userAboutMeWords_sf (filename.c_str());
+	csvfile_userAboutMeWords_sf << "Post;Up;Down;Total " << endl;
+	for (std::map<int , int[3]>::iterator it = stl_PostVotes[site].begin(); it != stl_PostVotes[site].end(); ++it)
+	{
+		csvfile_userAboutMeWords_sf << it->first <<" ; "<< it->second[0] <<" ; "<< it->second[1]<<" ; "<< it->second[2] << endl;
+	}
+	csvfile_userAboutMeWords_sf.close();
+}
+
+int main( int argc, char ** argv )
+{
+	clock_t begin = clock();
+	//pugi::xml_document doc_sf,doc_wp;
+	string fromSite="serverfault";
+	loadPosts(fromSite);
+	loadPostsHistory(fromSite);
+	loadComments(fromSite);
+	loadUsers(fromSite);
+	loadTags(fromSite);
+	loadBadges(fromSite);
+	loadVotes(fromSite);
+
+	writeWordFrequency(fromSite);
+	writeTagFrequency(fromSite);
+	writePostScore(fromSite);
+	writePostAnswer(fromSite);
+	writeUserReputation(fromSite);
+	writeUserAboutMeWords(fromSite);
+	writeBadges(fromSite);
+	writePostVotes(fromSite);
+	/******* FIN SF ****/
+
+	/****** WP */
+	fromSite="wordpress";
+	loadPosts(fromSite);
+	loadPostsHistory(fromSite);
+	loadComments(fromSite);
+	loadUsers(fromSite);
+	loadTags(fromSite);
+	loadBadges(fromSite);
+	loadVotes(fromSite);
+
+	writeWordFrequency(fromSite);
+	writeTagFrequency(fromSite);
+	writePostScore(fromSite);
+	writePostAnswer(fromSite);
+	writeUserReputation(fromSite);
+	writeUserAboutMeWords(fromSite);
+	writeBadges(fromSite);
+	writePostVotes(fromSite);
+
+	/***** fin WP   */
+	clock_t end = clock();
+	double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+	std::cout << "Tiempo STL "<<elapsed_secs << endl;
+
+	begin = clock();
+	fromSite="serverfault";
+	loadPosts_boost(fromSite);
+	loadPostsHistory_boost(fromSite);
+	loadComments_boost(fromSite);
+	loadUsers_boost(fromSite);
+	loadTags_boost(fromSite);
+	loadBadges_boost(fromSite);
+	loadVotes_boost(fromSite);
+
+	writeWordFrequency_boost(fromSite);
+	writeTagFrequency_boost(fromSite);
+	writePostScore_boost(fromSite);
+	writePostAnswer_boost(fromSite);
+	writeUserReputation_boost(fromSite);
+	writeUserAboutMeWords_boost(fromSite);
+	writeBadges_boost(fromSite);
+	writePostVotes_boost(fromSite);
+	/******* FIN SF ****/
+
+	/****** WP */
+	fromSite="wordpress";
+	loadPosts_boost(fromSite);
+	loadPostsHistory_boost(fromSite);
+	loadComments_boost(fromSite);
+	loadUsers_boost(fromSite);
+	loadTags_boost(fromSite);
+	loadBadges_boost(fromSite);
+	loadVotes_boost(fromSite);
+
+	writeWordFrequency_boost(fromSite);
+	writeTagFrequency_boost(fromSite);
+	writePostScore_boost(fromSite);
+	writePostAnswer_boost(fromSite);
+	writeUserReputation_boost(fromSite);
+	writeUserAboutMeWords_boost(fromSite);
+	writeBadges_boost(fromSite);
+	writePostVotes_boost(fromSite);
+	/***** fin WP   */
+	end = clock();
+	elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+	std::cout << "Tiempo Boost "<<elapsed_secs << endl;
 	return EXIT_SUCCESS;
 }
