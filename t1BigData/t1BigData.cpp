@@ -15,7 +15,8 @@
 #include <utility>
 #include <string.h>
 #include "pugixml.hpp"
-#include  <boost/unordered_map.hpp>
+#include <boost/unordered_map.hpp>
+#include <boost/lexical_cast.hpp>
 /*
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/serialization/nvp.hpp>
@@ -44,14 +45,13 @@ struct letter_only: std::ctype<char>
 int main( int argc, char ** argv )
 {
 	std::map<std::string, int> stl_wordCount_sf,stl_wordCount_wp,stl_tagCount_sf;
-	std::map< int, int> stl_postScore_sf;
-	std::map<int,int> stl_userReputation_sf,stl_userAboutMeWords_sf;
+	std::map< int, int> stl_postAnswer_sf,stl_postScore_sf,stl_userReputation_sf,stl_userAboutMeWords_sf;
 	std::map<int, vector<string> > stl_userBadges_sf;
 	typedef boost::unordered_map<std::string, int> b_wordCount_sf;
 
 	pugi::xml_document doc_sf,doc_wp;
 
-	cout<<"Posts sf"<<endl;
+	cout<<"Posts SF"<<endl;
 	pugi::xml_parse_result result_sf = doc_sf.load_file("./serverfault/Posts.xml");
 	pugi::xml_node node_sf = doc_sf.child("posts");
 
@@ -62,9 +62,14 @@ int main( int argc, char ** argv )
 		{
 
 			string name = ait->name();
+			if(name=="Id")
+			{
+				postId=boost::lexical_cast<int>(ait->value());
+			}
 			if(name=="AcceptedAnswerId")
 			{
-				int answer=stoi(ait->value());
+				int answer=boost::lexical_cast<int>(ait->value());
+				stl_postAnswer_sf[postId]=answer;
 			}
 			if(name=="Body")
 			{
@@ -81,8 +86,8 @@ int main( int argc, char ** argv )
 			}
 			if(name=="Score")
 			{
-				cout<<postId<<" "<<ait->value()<<endl;
-				stl_postScore_sf[postId]=stoi(ait->value());
+				//cout<<postId<<" "<<ait->value()<<endl;
+				stl_postScore_sf[postId]=boost::lexical_cast<int>(ait->value());
 			}
 		}
 	}
@@ -100,7 +105,7 @@ int main( int argc, char ** argv )
 			string name = ait->name();
 			if(name=="Id")
 			{
-				postId=stoi(ait->value());
+				postId=boost::lexical_cast<int>(ait->value());
 			}
 			if(name=="Text")
 			{
@@ -155,11 +160,11 @@ int main( int argc, char ** argv )
 
 			if(sname=="Id")
 			{
-				id=stoi(ait->value());
+				id=boost::lexical_cast<int>(ait->value());
 			}
 			if(sname=="Reputation")
 			{
-				reputation=stoi(ait->value());
+				reputation=boost::lexical_cast<int>(ait->value());
 
 				stl_userReputation_sf[id]=reputation;
 			}
@@ -199,7 +204,7 @@ int main( int argc, char ** argv )
 					count = ait->name();
 				} while (count!="Count");
 				string svalue=ait->value();
-				int value = stoi( svalue );
+				int value = boost::lexical_cast<int>( svalue );
 
 				stl_tagCount_sf[name]=value;
 			}
@@ -217,7 +222,7 @@ int main( int argc, char ** argv )
 			string sname = ait->name();
 			if(sname=="UserId")
 			{
-				id=stoi(ait->value());
+				id=boost::lexical_cast<int>(ait->value());
 			}
 			if(sname=="Name")
 			{
@@ -260,6 +265,14 @@ int main( int argc, char ** argv )
 		csvfile_postScore_sf << it->first <<" ; "<< it->second << endl;
 	}
 	csvfile_postScore_sf.close();
+
+	ofstream csvfile_postAnswer_sf ("PostAnswer_SF.csv");
+	csvfile_postAnswer_sf << "Post;Answer " << endl;
+	for (std::map<int , int>::iterator it = stl_postAnswer_sf.begin(); it != stl_postAnswer_sf.end(); ++it)
+	{
+		csvfile_postAnswer_sf << it->first <<" ; "<< it->second << endl;
+	}
+	csvfile_postAnswer_sf.close();
 
 	ofstream csvfile_userReputation_sf ("UserReputation_SF.csv");
 	csvfile_userReputation_sf << "User;Reputation " << endl;
