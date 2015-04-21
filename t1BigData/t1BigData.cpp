@@ -45,13 +45,11 @@ int main( int argc, char ** argv )
 {
 	std::map<std::string, int> stl_wordCount_sf,stl_wordCount_wp,stl_tagCount_sf;
 	std::map< int, int> stl_postScore_sf;
-	std::map<int,int> stl_userReputation_sf;
+	std::map<int,int> stl_userReputation_sf,stl_userAboutMeWords_sf;
+	std::map<int, vector<string> > stl_userBadges_sf;
 	typedef boost::unordered_map<std::string, int> b_wordCount_sf;
 
 	pugi::xml_document doc_sf,doc_wp;
-
-
-
 
 	cout<<"Posts sf"<<endl;
 	pugi::xml_parse_result result_sf = doc_sf.load_file("./serverfault/Posts.xml");
@@ -64,9 +62,9 @@ int main( int argc, char ** argv )
 		{
 
 			string name = ait->name();
-			if(name=="Body")
+			if(name=="AcceptedAnswerId")
 			{
-
+				int answer=stoi(ait->value());
 			}
 			if(name=="Body")
 			{
@@ -81,35 +79,15 @@ int main( int argc, char ** argv )
 					++stl_wordCount_sf[word];
 				}
 			}
-			if(name=="")
+			if(name=="Score")
 			{
-
+				cout<<postId<<" "<<ait->value()<<endl;
+				stl_postScore_sf[postId]=stoi(ait->value());
 			}
 		}
 	}
 
-	result_sf = doc_sf.load_file("./serverfault/Users.xml");
-		node_sf = doc_sf.child("users");
-		cout<<"Users SF"<<endl;
-		for (pugi::xml_node_iterator it = node_sf.begin(); it != node_sf.end(); ++it)
-		{
-			int id,reputation;
-			for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
-			{
-				string sname = ait->name();
 
-				if(sname=="Id")
-				{
-					id=stoi(ait->value());
-				}
-				if(sname=="Reputation")
-				{
-					reputation=stoi(ait->value());
-
-					stl_userReputation_sf[id]=reputation;
-				}
-			}
-		}
 
 	result_sf = doc_sf.load_file("./serverfault/PostsHistory.xml");
 	node_sf = doc_sf.child("posthistory");
@@ -124,7 +102,7 @@ int main( int argc, char ** argv )
 			{
 				postId=stoi(ait->value());
 			}
-			else if(name=="Text")
+			if(name=="Text")
 			{
 				stringstream ss;
 
@@ -137,11 +115,7 @@ int main( int argc, char ** argv )
 					++stl_wordCount_sf[word];
 				}
 			}
-			else if(name=="Score")
-			{
-				cout<<postId<<" "<<ait->value()<<endl;
-				stl_postScore_sf[postId]=stoi(ait->value());
-			}
+
 		}
 	}
 
@@ -165,6 +139,45 @@ int main( int argc, char ** argv )
 				{
 					++stl_wordCount_sf[word];
 				}
+			}
+		}
+	}
+
+	result_sf = doc_sf.load_file("./serverfault/Users.xml");
+	node_sf = doc_sf.child("users");
+	cout<<"Users SF"<<endl;
+	for (pugi::xml_node_iterator it = node_sf.begin(); it != node_sf.end(); ++it)
+	{
+		int id,reputation,aboutWordsCount;
+		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
+		{
+			string sname = ait->name();
+
+			if(sname=="Id")
+			{
+				id=stoi(ait->value());
+			}
+			if(sname=="Reputation")
+			{
+				reputation=stoi(ait->value());
+
+				stl_userReputation_sf[id]=reputation;
+			}
+			if(sname=="AboutMe")
+			{
+				aboutWordsCount=0;
+				stringstream ss;
+
+				ss.imbue(std::locale(std::locale(), new letter_only())); //enable reading only letters!
+
+				ss << ait->value();
+				string word;
+				while(ss >> word)
+				{
+					++aboutWordsCount;
+				}
+
+				stl_userAboutMeWords_sf[id]=aboutWordsCount;
 			}
 		}
 	}
@@ -194,25 +207,22 @@ int main( int argc, char ** argv )
 	}
 
 	result_sf = doc_sf.load_file("./serverfault/Badges.xml");
-	node_sf = doc_sf.child("tags");
+	node_sf = doc_sf.child("badges");
 	cout<<"Badges SF"<<endl;
 	for (pugi::xml_node_iterator it = node_sf.begin(); it != node_sf.end(); ++it)
 	{
+		int id;
 		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
 		{
 			string sname = ait->name();
-			if(sname=="TagName")
+			if(sname=="UserId")
 			{
-				string name=ait->value();
-				string count;
-				do {
-					ait++;
-					count = ait->name();
-				} while (count!="Count");
-				string svalue=ait->value();
-				int value = stoi( svalue );
-
-				stl_tagCount_sf[name]=value;
+				id=stoi(ait->value());
+			}
+			if(sname=="Name")
+			{
+				string badge=ait->value();;
+				stl_userBadges_sf[id].push_back (badge);
 			}
 		}
 	}
@@ -252,12 +262,36 @@ int main( int argc, char ** argv )
 	csvfile_postScore_sf.close();
 
 	ofstream csvfile_userReputation_sf ("UserReputation_SF.csv");
-	csvfile_userReputation_sf << "Post;Score " << endl;
+	csvfile_userReputation_sf << "User;Reputation " << endl;
 	for (std::map<int , int>::iterator it = stl_userReputation_sf.begin(); it != stl_userReputation_sf.end(); ++it)
 	{
 		csvfile_userReputation_sf << it->first <<" ; "<< it->second << endl;
 	}
 	csvfile_userReputation_sf.close();
+
+	ofstream csvfile_userAboutMeWords_sf ("UserAboutMeWords_SF.csv");
+	csvfile_userAboutMeWords_sf << "User;WordCountAboutMe " << endl;
+	for (std::map<int , int>::iterator it = stl_userAboutMeWords_sf.begin(); it != stl_userAboutMeWords_sf.end(); ++it)
+	{
+		csvfile_userAboutMeWords_sf << it->first <<" ; "<< it->second << endl;
+	}
+	csvfile_userAboutMeWords_sf.close();
+
+	ofstream csvfile_userBadges_sf ("UserBadges_SF.csv");
+	ofstream csvfile_userBadgeCount_sf ("UserBadgeCount_SF.csv");
+	csvfile_userBadges_sf << "User;Badge " << endl;
+	for (std::map<int , vector<string>>::iterator it = stl_userBadges_sf.begin(); it != stl_userBadges_sf.end(); ++it)
+	{
+		vector<string> badges=it->second;
+		csvfile_userBadgeCount_sf<< it->first <<" ; "<< badges.size() << endl;
+		for (vector<string>::iterator it2 = badges.begin(); it2 != badges.end(); ++it2)
+		{
+			csvfile_userBadges_sf << it->first <<" ; "<< *it2 << endl;
+		}
+
+	}
+	csvfile_userBadges_sf.close();
+	csvfile_userBadgeCount_sf.close();
 
 	cout<<"WP"<<endl;
 	ofstream csvfile_freq_wp ("WordFrequency_WP.csv");
