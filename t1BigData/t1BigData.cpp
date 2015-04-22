@@ -26,18 +26,21 @@ using namespace std;
 using namespace boost;
 
 map<string,map<string, int> > stl_wordCount,stl_tagCount;
-map<string,map< int, int> > stl_postTime,stl_postAnswer,stl_postScore,stl_userReputation,stl_userAboutMeWords,stl_userAge;
+map<string,map< int, int> > stl_answerCount,stl_postLenght,stl_postTime,stl_postAnswer,stl_postScore,stl_userReputation,stl_userAboutMeWords,stl_userAge;
 map<string,map< int, vector<string> > > stl_userBadges;
 map<string,map< int, int[2] > > stl_PostVotes;
+map<string,map< int, vector<int> > > stl_answerLenght;
 
 typedef unordered_map<string,unordered_map<string, int> > umap_1;
 umap_1 b_wordCount,b_tagCount;
 typedef unordered_map<string,unordered_map< int, int> > umap_2;
-umap_2 b_postTime,b_postAnswer,b_postScore,b_userReputation,b_userAboutMeWords,b_userAge;
+umap_2 b_answerCount,b_postLenght,b_postTime,b_postAnswer,b_postScore,b_userReputation,b_userAboutMeWords,b_userAge;
 typedef unordered_map<string,unordered_map< int, vector<string> > > umap_3;
 umap_3 b_userBadges;
 typedef unordered_map<string,unordered_map< int, boost::array<int, 2>> > umap_4;
 umap_4 b_PostVotes;
+typedef unordered_map<string,unordered_map< int, vector<int> > > umap_5;
+umap_5 b_answerLenght;
 
 pugi::xml_parse_result result;
 pugi::xml_node node;
@@ -142,7 +145,7 @@ void loadPosts(string site)
 	node = doc.child("posts");
 	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
 	{
-		int postId;
+		int postId,parent,textLenght;
 		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
 		{
 			string name = ait->name();
@@ -163,6 +166,8 @@ void loadPosts(string site)
 				string word;
 				while(ss >> word)
 				{
+					++textLenght;
+					++stl_postLenght[site][postId];
 					++stl_wordCount[site][word];
 				}
 			}
@@ -177,7 +182,13 @@ void loadPosts(string site)
 				vector<string> time= split(x[1],':');
 				++stl_postTime[site][boost::lexical_cast<int>(time[0])];
 			}
+			if(name=="ParentId")
+			{
+				parent = boost::lexical_cast<int>(ait->value());
+				++stl_answerCount[site][parent];
+			}
 		}
+		stl_answerLenght[site][parent].push_back(textLenght);
 	}
 }
 void loadPosts_boost(string site)
@@ -192,7 +203,7 @@ void loadPosts_boost(string site)
 	node = doc.child("posts");
 	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
 	{
-		int postId;
+		int postId,parent,textLenght;
 		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
 		{
 			string name = ait->name();
@@ -213,6 +224,8 @@ void loadPosts_boost(string site)
 				string word;
 				while(ss >> word)
 				{
+					++textLenght;
+					++b_postLenght[site][postId];
 					++b_wordCount[site][word];
 				}
 			}
@@ -227,7 +240,13 @@ void loadPosts_boost(string site)
 				vector<string> time= split(x[1],':');
 				++b_postTime[site][boost::lexical_cast<int>(time[0])];
 			}
+			if(name=="ParentId")
+			{
+				parent = boost::lexical_cast<int>(ait->value());
+				++b_answerCount[site][parent];
+			}
 		}
+		b_answerLenght[site][parent].push_back(textLenght);
 	}
 }
 
@@ -727,6 +746,29 @@ void writeTagFrequency_boost(string site)
 	csvfile_tagfreq.close();
 }
 
+void writeAnswerCount(string site)
+{
+	string filename="AnswerCount"+site+".csv";
+	ofstream csvfile_tagfreq (filename.c_str());
+	csvfile_tagfreq << "Post;Answers" << endl;
+	for (auto it = stl_answerCount[site].begin(); it != stl_answerCount[site].end(); ++it)
+	{
+		csvfile_tagfreq << it->first <<";"<< it->second << endl;
+	}
+	csvfile_tagfreq.close();
+}
+void writeAnswerCount_boost(string site)
+{
+	string filename="AnswerCount"+site+"_boost.csv";
+	ofstream csvfile_tagfreq (filename.c_str());
+	csvfile_tagfreq << "Post;Answers" << endl;
+	for (auto it = b_answerCount[site].begin(); it != b_answerCount[site].end(); ++it)
+	{
+		csvfile_tagfreq << it->first <<";"<< it->second << endl;
+	}
+	csvfile_tagfreq.close();
+}
+
 void writePostScore(string site)
 {
 	string filename="PostScore_"+site+".csv";
@@ -789,6 +831,29 @@ void writePostAnswer_boost(string site)
 	string filename="PostAnswer_"+site+"_boost.csv";
 	ofstream csvfile_postAnswer (filename.c_str());
 	csvfile_postAnswer << "Post;Answer" << endl;
+	for (auto it = b_postAnswer[site].begin(); it != b_postAnswer[site].end(); ++it)
+	{
+		csvfile_postAnswer << it->first <<";"<< it->second << endl;
+	}
+	csvfile_postAnswer.close();
+}
+
+void writePostLenght(string site)
+{
+	string filename="PostLenght_"+site+".csv";
+	ofstream csvfile_postAnswer (filename.c_str());
+	csvfile_postAnswer << "Post;Lenght" << endl;
+	for (std::map<int , int>::iterator it = stl_postAnswer[site].begin(); it != stl_postAnswer[site].end(); ++it)
+	{
+		csvfile_postAnswer << it->first <<";"<< it->second << endl;
+	}
+	csvfile_postAnswer.close();
+}
+void writePostLenght_boost(string site)
+{
+	string filename="PostLenght_"+site+"_boost.csv";
+	ofstream csvfile_postAnswer (filename.c_str());
+	csvfile_postAnswer << "Post;Lenght" << endl;
 	for (auto it = b_postAnswer[site].begin(); it != b_postAnswer[site].end(); ++it)
 	{
 		csvfile_postAnswer << it->first <<";"<< it->second << endl;
@@ -907,6 +972,11 @@ void writeBadges_boost(string site)
 	csvfile_userBadgeCount.close();
 }
 
+void analyze(string fromSite)
+{
+
+}
+
 int main( int argc, char ** argv )
 {
 	time_t rawtime;
@@ -945,6 +1015,8 @@ int main( int argc, char ** argv )
 	log<<fromSite<<";"<<"STL"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 	writePostScore(fromSite);
 	log<<fromSite<<";"<<"STL"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
+	writePostLenght(fromSite);
+	log<<fromSite<<";"<<"STL"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 	writePostTime(fromSite);
 	log<<fromSite<<";"<<"STL"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 	writePostAnswer(fromSite);
@@ -956,6 +1028,8 @@ int main( int argc, char ** argv )
 	writeBadges(fromSite);
 	log<<fromSite<<";"<<"STL"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 	writePostVotes(fromSite);
+	log<<fromSite<<";"<<"STL"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
+	writeAnswerCount(fromSite);
 	log<<fromSite<<";"<<"STL"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 	/******* FIN SF ****/
 	clock_t end = clock();
@@ -976,6 +1050,7 @@ int main( int argc, char ** argv )
 	loadBadges_boost(fromSite);
 	log<<fromSite<<";"<<"Boost"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 	loadVotes_boost(fromSite);
+	log<<fromSite<<";"<<"Boost"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 
 	writeWordFrequency_boost(fromSite);
 	log<<fromSite<<";"<<"Boost"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
@@ -984,6 +1059,8 @@ int main( int argc, char ** argv )
 	writeUserAge_boost(fromSite);
 	log<<fromSite<<";"<<"Boost"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 	writePostScore_boost(fromSite);
+	log<<fromSite<<";"<<"Boost"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
+	writePostLenght_boost(fromSite);
 	log<<fromSite<<";"<<"Boost"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 	writePostTime_boost(fromSite);
 	log<<fromSite<<";"<<"Boost"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
@@ -996,6 +1073,9 @@ int main( int argc, char ** argv )
 	writeBadges_boost(fromSite);
 	log<<fromSite<<";"<<"Boost"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 	writePostVotes_boost(fromSite);
+	log<<fromSite<<";"<<"Boost"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
+	writeAnswerCount_boost(fromSite);
+	log<<fromSite<<";"<<"Boost"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 
 	end = clock();
 	elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
@@ -1028,6 +1108,8 @@ int main( int argc, char ** argv )
 	log<<fromSite<<";"<<"STL"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 	writePostScore(fromSite);
 	log<<fromSite<<";"<<"STL"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
+	writePostLenght(fromSite);
+		log<<fromSite<<";"<<"STL"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 	writePostTime(fromSite);
 	log<<fromSite<<";"<<"STL"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 	writePostAnswer(fromSite);
@@ -1039,6 +1121,9 @@ int main( int argc, char ** argv )
 	writeBadges(fromSite);
 	log<<fromSite<<";"<<"STL"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 	writePostVotes(fromSite);
+	log<<fromSite<<";"<<"STL"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
+	writeAnswerCount(fromSite);
+	log<<fromSite<<";"<<"STL"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 
 	end = clock();
 	elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
@@ -1068,6 +1153,8 @@ int main( int argc, char ** argv )
 	log<<fromSite<<";"<<"Boost"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 	writePostScore_boost(fromSite);
 	log<<fromSite<<";"<<"Boost"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
+	writePostLenght_boost(fromSite);
+	log<<fromSite<<";"<<"Boost"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 	writePostTime_boost(fromSite);
 	log<<fromSite<<";"<<"Boost"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 	writePostAnswer_boost(fromSite);
@@ -1080,6 +1167,9 @@ int main( int argc, char ** argv )
 	log<<fromSite<<";"<<"Boost"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 	writePostVotes_boost(fromSite);
 	log<<fromSite<<";"<<"Boost"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
+	writeAnswerCount_boost(fromSite);
+		log<<fromSite<<";"<<"Boost"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
+
 	/***** fin WP   */
 	end = clock();
 	elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
