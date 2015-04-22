@@ -28,7 +28,7 @@ using namespace boost;
 map<string,map<string, int> > stl_wordCount,stl_tagCount;
 map<string,map< int, int> > stl_postTime,stl_postAnswer,stl_postScore,stl_userReputation,stl_userAboutMeWords,stl_userAge;
 map<string,map< int, vector<string> > > stl_userBadges;
-map<string,map< int, int[3] > > stl_PostVotes;
+map<string,map< int, int[2] > > stl_PostVotes;
 
 typedef unordered_map<string,unordered_map<string, int> > umap_1;
 umap_1 b_wordCount,b_tagCount;
@@ -36,7 +36,7 @@ typedef unordered_map<string,unordered_map< int, int> > umap_2;
 umap_2 b_postTime,b_postAnswer,b_postScore,b_userReputation,b_userAboutMeWords,b_userAge;
 typedef unordered_map<string,unordered_map< int, vector<string> > > umap_3;
 umap_3 b_userBadges;
-typedef unordered_map<string,unordered_map< int, boost::array<int, 3>> > umap_4;
+typedef unordered_map<string,unordered_map< int, boost::array<int, 2>> > umap_4;
 umap_4 b_PostVotes;
 
 pugi::xml_parse_result result;
@@ -76,17 +76,15 @@ double getCPUUsage(){
 	for(;;)
 	{
 		fp = fopen("/proc/stat","r");
-		fscanf(fp,"%*s %Lf %Lf %Lf %Lf",&a[0],&a[1],&a[2],&a[3]);
+		int i=fscanf(fp,"%*s %Lf %Lf %Lf %Lf",&a[0],&a[1],&a[2],&a[3]);
 		fclose(fp);
 		sleep(1);
 
 		fp = fopen("/proc/stat","r");
-		fscanf(fp,"%*s %Lf %Lf %Lf %Lf",&b[0],&b[1],&b[2],&b[3]);
+		i=fscanf(fp,"%*s %Lf %Lf %Lf %Lf",&b[0],&b[1],&b[2],&b[3]);
 		fclose(fp);
-
 		loadavg = ((b[0]+b[1]+b[2]) - (a[0]+a[1]+a[2])) / ((b[0]+b[1]+b[2]+b[3]) - (a[0]+a[1]+a[2]+a[3]));
 		return loadavg*100;
-		//printf("The current CPU utilization is : %Lf\n",loadavg);
 	}
 }
 
@@ -103,7 +101,6 @@ int getVMValue(){ //Note: this value is in KB!
 	FILE* file = fopen("/proc/self/status", "r");
 	int result = -1;
 	char line[128];
-
 	while (fgets(line, 128, file) != NULL)
 	{
 		if (strncmp(line, "VmSize:", 7) == 0)
@@ -121,7 +118,6 @@ int getRAMValue(){ //Note: this value is in KB!
 	int result = -1;
 	char line[128];
 
-
 	while (fgets(line, 128, file) != NULL)
 	{
 		if (strncmp(line, "VmRSS:", 6) == 0)
@@ -136,11 +132,8 @@ int getRAMValue(){ //Note: this value is in KB!
 
 void loadPosts(string site)
 {
-	int contador=0;
-	cout<<"Posts "<<site<<endl;
 	string filename="./"+site+"/Posts.xml";
 	result = doc.load_file(filename.c_str());
-
 	if(!result)
 	{
 	    cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
@@ -182,29 +175,21 @@ void loadPosts(string site)
 				string datetime = ait->value();
 				vector<string> x=split(datetime,'T');
 				vector<string> time= split(x[1],':');
-
 				++stl_postTime[site][boost::lexical_cast<int>(time[0])];
 			}
 		}
-		contador++;
 	}
-	cout<< contador<<" "<<site<<endl;
 }
 void loadPosts_boost(string site)
 {
-	int contador=0;
-	cout<<"Posts "<<site<<endl;
 	string filename="./"+site+"/Posts.xml";
 	result = doc.load_file(filename.c_str());
-
 	if(!result)
 	{
 	    cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
 	    cout << "Error description: " << result.description() << "\n";
 	}
-
 	node = doc.child("posts");
-
 	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
 	{
 		int postId;
@@ -228,7 +213,6 @@ void loadPosts_boost(string site)
 				string word;
 				while(ss >> word)
 				{
-
 					++b_wordCount[site][word];
 				}
 			}
@@ -244,36 +228,24 @@ void loadPosts_boost(string site)
 				++b_postTime[site][boost::lexical_cast<int>(time[0])];
 			}
 		}
-		contador++;
 	}
-	cout<< contador<<" "<<site<<endl;
 }
 
 void loadPostsHistory(string site)
 {
 	string filename="./"+site+"/PostHistory.xml";
 	result = doc.load_file(filename.c_str());
-
 	if(!result)
 	{
 		cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
 		cout << "Error description: " << result.description() << "\n";
 	}
-
 	node = doc.child("posthistory");
-	cout<<"Post History "<<site<<endl;
-
-	int contador=0;
 	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
 	{
-		int postId=0;
 		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
 		{
 			string name = ait->name();
-			if(name=="Id")
-			{
-				postId=boost::lexical_cast<int>(ait->value());
-			}
 			if(name=="Text")
 			{
 				stringstream ss;
@@ -293,35 +265,23 @@ void loadPostsHistory(string site)
 				++stl_postTime[site][boost::lexical_cast<int>(time[0])];
 			}
 		}
-		contador++;
 	}
-	cout<< contador<<" "<<site<<endl;
 }
 void loadPostsHistory_boost(string site)
 {
 	string filename="./"+site+"/PostHistory.xml";
 	result = doc.load_file(filename.c_str());
-
 	if(!result)
 	{
 		cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
 		cout << "Error description: " << result.description() << "\n";
 	}
-
 	node = doc.child("posthistory");
-	cout<<"Post History "<<site<<endl;
-
-	int contador=0;
 	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
 	{
-		int postId;
 		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
 		{
 			string name = ait->name();
-			if(name=="Id")
-			{
-				postId=boost::lexical_cast<int>(ait->value());
-			}
 			if(name=="Text")
 			{
 				stringstream ss;
@@ -341,16 +301,13 @@ void loadPostsHistory_boost(string site)
 				++b_postTime[site][boost::lexical_cast<int>(time[0])];
 			}
 		}
-		contador++;
 	}
-	cout<< contador<<" "<<site<<endl;
 }
 
 void loadComments(string site)
 {
 	string filename="./"+site+"/Comments.xml";
 	result = doc.load_file(filename.c_str());
-
 	if(!result)
 	{
 		cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
@@ -358,9 +315,7 @@ void loadComments(string site)
 	}
 
 	node = doc.child("comments");
-	cout<<"Comments "<<site<<endl;
 
-	int contador=0;
 	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
 	{
 		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
@@ -385,25 +340,18 @@ void loadComments(string site)
 				++stl_postTime[site][boost::lexical_cast<int>(time[0])];
 			}
 		}
-		contador++;
 	}
-	cout<< contador<<" "<<site<<endl;
 }
 void loadComments_boost(string site)
 {
 	string filename="./"+site+"/Comments.xml";
 	result = doc.load_file(filename.c_str());
-
 	if(!result)
 	{
 		cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
 		cout << "Error description: " << result.description() << "\n";
 	}
-
 	node = doc.child("comments");
-	cout<<"Comments "<<site<<endl;
-
-	int contador=0;
 	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
 	{
 		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
@@ -428,25 +376,19 @@ void loadComments_boost(string site)
 				++b_postTime[site][boost::lexical_cast<int>(time[0])];
 			}
 		}
-		contador++;
 	}
-	cout<< contador<<" "<<site<<endl;
 }
 
 void loadUsers (string site)
 {
 	string filename="./"+site+"/Users.xml";
 	result = doc.load_file(filename.c_str());
-
 	if(!result)
 	{
 		cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
 		cout << "Error description: " << result.description() << "\n";
 	}
-
-	int contador=0;
 	node = doc.child("users");
-	cout<<"Users "<<site<<endl;
 	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
 	{
 		int id,reputation,aboutWordsCount;
@@ -481,24 +423,18 @@ void loadUsers (string site)
 				stl_userAge[site][id]=age;
 			}
 		}
-		contador++;
 	}
-	cout<< contador<<" "<<site<<endl;
 }
 void loadUsers_boost(string site)
 {
 	string filename="./"+site+"/Users.xml";
 	result = doc.load_file(filename.c_str());
-
 	if(!result)
 	{
 		cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
 		cout << "Error description: " << result.description() << "\n";
 	}
-
-	int contador=0;
 	node = doc.child("users");
-	cout<<"Users "<<site<<endl;
 	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
 	{
 		int id,reputation,aboutWordsCount;
@@ -528,24 +464,19 @@ void loadUsers_boost(string site)
 				b_userAboutMeWords[site][id]=aboutWordsCount;
 			}
 		}
-		contador++;
 	}
-	cout<< contador<<" "<<site<<endl;
 }
 
 void loadTags(string site)
 {
 	string filename = "./"+site+"/Tags.xml";
 	result = doc.load_file(filename.c_str());
-
 	if(!result)
 	{
 		cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
 		cout << "Error description: " << result.description() << "\n";
 	}
-	int contador=0;
 	node = doc.child("tags");
-	cout<<"Tags "<<site<<endl;
 	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
 	{
 		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
@@ -561,27 +492,21 @@ void loadTags(string site)
 				} while (count!="Count");
 				string svalue=ait->value();
 				int value = boost::lexical_cast<int>( svalue );
-
 				stl_tagCount[site][name]=value;
 			}
 		}
-		contador++;
 	}
-	cout<< contador<<" "<<site<<endl;
 }
 void loadTags_boost(string site)
 {
 	string filename = "./"+site+"/Tags.xml";
 	result = doc.load_file(filename.c_str());
-
 	if(!result)
 	{
 		cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
 		cout << "Error description: " << result.description() << "\n";
 	}
-	int contador=0;
 	node = doc.child("tags");
-	cout<<"Tags "<<site<<endl;
 	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
 	{
 		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
@@ -597,29 +522,22 @@ void loadTags_boost(string site)
 				} while (count!="Count");
 				string svalue=ait->value();
 				int value = boost::lexical_cast<int>( svalue );
-
 				b_tagCount[site][name]=value;
 			}
 		}
-		contador++;
 	}
-	cout<< contador<<" "<<site<<endl;
 }
 
 void loadBadges(string site)
 {
 	string filename="./"+site+ "/Badges.xml";
 	result = doc.load_file(filename.c_str());
-
 	if(!result)
 	{
 		cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
 		cout << "Error description: " << result.description() << "\n";
 	}
-
-	node = doc.child("badges");int contador=0;
-	cout<<"Badges "<<site<<endl;
-
+	node = doc.child("badges");
 	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
 	{
 		int id;
@@ -632,32 +550,25 @@ void loadBadges(string site)
 			}
 			if(sname=="Name")
 			{
-				string badge=ait->value();;
-
+				string badge=ait->value();
 				stl_userBadges[site][id].push_back (badge);
 			}
 		}
-		contador++;
 	}
-	cout<< contador<<" "<<site<<endl;
 }
 void loadBadges_boost(string site)
 {
 	string filename="./"+site+ "/Badges.xml";
 	result = doc.load_file(filename.c_str());
-
 	if(!result)
 	{
 		cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
 		cout << "Error description: " << result.description() << "\n";
 	}
-
-	node = doc.child("badges");int contador=0;
-	cout<<"Badges "<<site<<endl;
-
+	node = doc.child("badges");
 	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
 	{
-		int id;
+		int id=0;
 		for (pugi::xml_attribute_iterator ait = it->attributes_begin(); ait != it->attributes_end(); ++ait)
 		{
 			string sname = ait->name();
@@ -671,24 +582,19 @@ void loadBadges_boost(string site)
 				b_userBadges[site][id].push_back (badge);
 			}
 		}
-		contador++;
 	}
-	cout<< contador<<" "<<site<<endl;
 }
 
 void loadVotes(string site)
 {
 	string filename = "./"+site+"/Votes.xml";
 	result = doc.load_file(filename.c_str());
-
 	if(!result)
 	{
 		cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
 		cout << "Error description: " << result.description() << "\n";
 	}
-	//int contador=0;
 	node = doc.child("votes");
-	cout<<"Votes "<<site<<endl;
 	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
 	{
 		int id;
@@ -705,12 +611,10 @@ void loadVotes(string site)
 				if(vote==2)
 				{
 					++stl_PostVotes[site][id][0];
-					++stl_PostVotes[site][id][2];
 				}
 				if(vote==3)
 				{
 					++stl_PostVotes[site][id][1];
-					--stl_PostVotes[site][id][2];
 				}
 
 			}
@@ -727,9 +631,7 @@ void loadVotes_boost(string site)
 		cout << "XML [" << filename << "] parsed with errors, attr value: [" << doc.child("node").attribute("attr").value() << "]\n";
 		cout << "Error description: " << result.description() << "\n";
 	}
-	//int contador=0;
 	node = doc.child("votes");
-	cout<<"Votes "<<site<<endl;
 	for (pugi::xml_node_iterator it = node.begin(); it != node.end(); ++it)
 	{
 		int id;
@@ -746,12 +648,10 @@ void loadVotes_boost(string site)
 				if(vote==2)
 				{
 					++b_PostVotes[site][id][0];
-					++b_PostVotes[site][id][2];
 				}
 				if(vote==3)
 				{
 					++b_PostVotes[site][id][1];
-					--b_PostVotes[site][id][2];
 				}
 			}
 		}
@@ -760,10 +660,9 @@ void loadVotes_boost(string site)
 
 void writeWordFrequency(string site)
 {
-	cout<<"SF"<<endl;
 	string filename="WordFrequency_"+site+".csv";
 	ofstream csvfile_freq (filename.c_str());
-	csvfile_freq << "Word; Frequency " << endl;
+	csvfile_freq << "Word;Frequency" << endl;
 	for (std::map<std::string, int>::iterator it = stl_wordCount[site].begin(); it != stl_wordCount[site].end(); ++it)
 	{
 		csvfile_freq << it->first <<";"<< it->second << endl;
@@ -774,7 +673,7 @@ void writeWordFrequency_boost(string site)
 {
 	string filename="WordFrequency_"+site+"_boost.csv";
 	ofstream csvfile_freq (filename.c_str());
-	csvfile_freq << "Word; Frequency " << endl;
+	csvfile_freq << "Word;Frequency" << endl;
 	for (auto it = b_wordCount[site].begin(); it != b_wordCount[site].end(); ++it)
 	{
 			csvfile_freq << it->first <<";"<< it->second << endl;
@@ -786,7 +685,7 @@ void writePostTime(string site)
 {
 	string filename="PostTime_"+site+".csv";
 	ofstream csvfile (filename.c_str());
-	csvfile << "Post; Time " << endl;
+	csvfile << "Hour;Posts" << endl;
 	for (auto it = stl_postTime[site].begin(); it != stl_postTime[site].end(); ++it)
 	{
 		csvfile << it->first <<";"<< it->second << endl;
@@ -797,7 +696,7 @@ void writePostTime_boost(string site)
 {
 	string filename="PostTime_"+site+"_boost.csv";
 	ofstream csvfile (filename.c_str());
-	csvfile << "Post; Time " << endl;
+	csvfile << "Hour;Posts" << endl;
 	for (auto it = b_postTime[site].begin(); it != b_postTime[site].end(); ++it)
 	{
 		csvfile << it->first <<";"<< it->second << endl;
@@ -832,7 +731,7 @@ void writePostScore(string site)
 {
 	string filename="PostScore_"+site+".csv";
 	ofstream csvfile_postScore (filename.c_str());
-	csvfile_postScore << "Post;Score " << endl;
+	csvfile_postScore << "Post;Score" << endl;
 	for (std::map<int , int>::iterator it = stl_postScore[site].begin(); it != stl_postScore[site].end(); ++it)
 	{
 		csvfile_postScore << it->first <<";"<< it->second << endl;
@@ -843,7 +742,7 @@ void writePostScore_boost(string site)
 {
 	string filename="PostScore_"+site+"_boost.csv";
 	ofstream csvfile_postScore (filename.c_str());
-	csvfile_postScore << "Post;Score " << endl;
+	csvfile_postScore << "Post;Score" << endl;
 	for (auto it = b_postScore[site].begin(); it != b_postScore[site].end(); ++it)
 	{
 		csvfile_postScore << it->first <<";"<< it->second << endl;
@@ -924,10 +823,10 @@ void writePostVotes(string site)
 {
 	string filename="PostVotes_"+site+".csv";
 	ofstream csvfile_userAboutMeWords_sf (filename.c_str());
-	csvfile_userAboutMeWords_sf << "Post;Up;Down;Total " << endl;
-	for (std::map<int , int[3]>::iterator it = stl_PostVotes[site].begin(); it != stl_PostVotes[site].end(); ++it)
+	csvfile_userAboutMeWords_sf << "Post;Up;Down;Total" << endl;
+	for (auto it = stl_PostVotes[site].begin(); it != stl_PostVotes[site].end(); ++it)
 	{
-		csvfile_userAboutMeWords_sf << it->first <<";"<< it->second[0] <<";"<< it->second[1]<<";"<< it->second[2] << endl;
+		csvfile_userAboutMeWords_sf << it->first <<";"<< it->second[0] <<";"<< it->second[1]<<";"<< it->second[0]-it->second[1] << endl;
 	}
 	csvfile_userAboutMeWords_sf.close();
 }
@@ -935,10 +834,10 @@ void writePostVotes_boost(string site)
 {
 	string filename="PostVotes_"+site+"_boost.csv";
 	ofstream csvfile_userAboutMeWords_sf (filename.c_str());
-	csvfile_userAboutMeWords_sf << "Post;Up;Down;Total " << endl;
-	for (std::map<int , int[3]>::iterator it = stl_PostVotes[site].begin(); it != stl_PostVotes[site].end(); ++it)
+	csvfile_userAboutMeWords_sf << "Post;Up;Down;Total" << endl;
+	for (auto it = stl_PostVotes[site].begin(); it != stl_PostVotes[site].end(); ++it)
 	{
-		csvfile_userAboutMeWords_sf << it->first <<";"<< it->second[0] <<";"<< it->second[1]<<";"<< it->second[2] << endl;
+		csvfile_userAboutMeWords_sf << it->first <<";"<< it->second[0] <<";"<< it->second[1]<<";"<< it->second[0]-it->second[1] << endl;
 	}
 	csvfile_userAboutMeWords_sf.close();
 }
@@ -1010,14 +909,15 @@ void writeBadges_boost(string site)
 
 int main( int argc, char ** argv )
 {
-	time_t current_time=time(nullptr);
-	string str=asctime(localtime(&current_time));
-	str.replace(str.begin(),str.end(),"\n","");
-	string filename="Log "+str+".log";
-	string filenamet="Log "+str+"_t.log";
+	time_t rawtime;
+
+	time (&rawtime);
+
+	string filename="Log "+string(ctime (&rawtime))+".log";
+	string filenamet="Log "+string(ctime (&rawtime))+"_t.log";
 	ofstream log (filename.c_str());
 	ofstream logtime (filenamet.c_str());
-	log<<"Site;Container;Virtual Mem [kB]; RAM [kB];CPU [%]"<<endl;
+	log<<"Site;Container;Virtual Mem [kB];RAM [kB];CPU [%]"<<endl;
 	logtime	<<"Site;Container;Time [s]"<<endl;
 	clock_t begin = clock();
 
@@ -1183,7 +1083,7 @@ int main( int argc, char ** argv )
 	/***** fin WP   */
 	end = clock();
 	elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-	logtime << "Boost"<<fromSite<<";"<<elapsed_secs << endl;
+	logtime << "Boost;"<<fromSite<<";"<<elapsed_secs << endl;
 
 	log.close();
 	logtime.close();
