@@ -894,7 +894,7 @@ void writePostAnswer_boost(string site)
 
 void writeUserResponses(string site)
 {
-	string filename="UserResponses"+site+".csv";
+	string filename="UserResponses_"+site+".csv";
 	ofstream csvfile_postAnswer (filename.c_str());
 	csvfile_postAnswer << "User;Responses" << endl;
 	for (std::map<int , int>::iterator it = stl_postAnswer[site].begin(); it != stl_postAnswer[site].end(); ++it)
