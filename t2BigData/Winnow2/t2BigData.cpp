@@ -1,9 +1,9 @@
 //============================================================================
-// Name        : t1BigData.cpp
-// Author      : 
-// Version     :
-// Copyright   : Your copyright notice
-// Description : Hello World in C, Ansi-style
+// Name        : t2BigData.cpp
+// Author      : mespinozas
+// Version     : 1.0
+// Copyright   : 
+// Description : C++ implementation of Winnow2 Classifier
 //============================================================================
 #include <stdio.h>
 #include <stdlib.h>
