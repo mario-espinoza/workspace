@@ -27,5 +27,5 @@
 *.out
 *.app
 
-./serverfault/
-./wordpress/
+./t1BigData/serverfault/
+./t1BigData/wordpress/
