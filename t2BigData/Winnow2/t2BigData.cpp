@@ -21,6 +21,7 @@
 #include "boost/tuple/tuple.hpp"
 #include "sys/times.h"
 #include "sys/vtimes.h"
+#include <boost/algorithm/string.hpp> 
 
 using namespace std;
 using namespace boost;
@@ -177,9 +178,10 @@ void loadPosts(string site)
 				string word;
 				while(ss >> word)
 				{
+					word=boost::algorithm::to_lower(word);
 					++textLenght;
 					++stl_postLenght[site][postId];
-					//++stl_wordCount[site][word];
+					++stl_wordCount[site][word];
 					++stl_wordCountInTime[site][word][date_s];
 				}
 			}
@@ -247,9 +249,10 @@ void loadPosts_boost(string site)
 				string word;
 				while(ss >> word)
 				{
+					word=boost::algorithm::to_lower(word);
 					++textLenght;
 					++b_postLenght[site][postId];
-					//++b_wordCount[site][word];
+					++b_wordCount[site][word];
 					++b_wordCountInTime[site][word][date_s];
 				}
 			}
@@ -305,6 +308,7 @@ void loadPostsHistory(string site)
 				string word;
 				while(ss >> word)
 				{
+					word=boost::algorithm::to_lower(word);
 					++stl_wordCount[site][word];
 				}
 			}
@@ -341,6 +345,7 @@ void loadPostsHistory_boost(string site)
 				string word;
 				while(ss >> word)
 				{
+					word=boost::algorithm::to_lower(word);
 					++b_wordCount[site][word];
 				}
 			}
@@ -380,6 +385,7 @@ void loadComments(string site)
 				string word;
 				while(ss >> word)
 				{
+					word=boost::algorithm::to_lower(word);
 					++stl_wordCount[site][word];
 				}
 			}
@@ -416,6 +422,7 @@ void loadComments_boost(string site)
 				string word;
 				while(ss >> word)
 				{
+					word=boost::algorithm::to_lower(word);
 					++b_wordCount[site][word];
 				}
 			}
