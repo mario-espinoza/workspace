@@ -9,7 +9,14 @@ TARGET =	t2BigData
 $(TARGET):	$(OBJS)
 	$(CXX) -o $(TARGET) $(OBJS) $(LIBS)
 
-all:	$(TARGET)
+$(MD):
+	mkdir -p ./logs
+	mkdir -p ./csv
+
+all:	$(TARGET) 
+	$(MD)
 
 clean:
-	rm -f $(OBJS) $(TARGET) *.csv
+	rm -f $(OBJS) $(TARGET) *.csv 
+	mkdir -p ./logs 
+	mkdir -p ./csv

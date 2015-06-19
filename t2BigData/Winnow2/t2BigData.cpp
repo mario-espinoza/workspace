@@ -175,10 +175,16 @@ void loadPosts(string site)
 				stringstream ss;
 				ss.imbue(std::locale(std::locale(), new letter_only())); //enable reading only letters!
 				ss << ait->value();
+				std::string str(ss.str());
+				std::replace(str.begin(), str.end(), '\\', ' '); 
+				std::replace(str.begin(), str.end(), '[', ' '); 
+				std::replace(str.begin(), str.end(), ']', ' '); 
+				std::replace(str.begin(), str.end(), '^', ' ');
+				ss.str(str);
 				string word;
 				while(ss >> word)
 				{
-					word=boost::algorithm::to_lower(word);
+					boost::algorithm::to_lower(word);
 					++textLenght;
 					++stl_postLenght[site][postId];
 					++stl_wordCount[site][word];
@@ -246,10 +252,16 @@ void loadPosts_boost(string site)
 				stringstream ss;
 				ss.imbue(std::locale(std::locale(), new letter_only())); //enable reading only letters!
 				ss << ait->value();
+				std::string str(ss.str());
+				std::replace(str.begin(), str.end(), '\\', ' '); 
+				std::replace(str.begin(), str.end(), '[', ' '); 
+				std::replace(str.begin(), str.end(), ']', ' '); 
+				std::replace(str.begin(), str.end(), '^', ' '); 
+				ss.str(str);				
 				string word;
 				while(ss >> word)
 				{
-					word=boost::algorithm::to_lower(word);
+					boost::algorithm::to_lower(word);
 					++textLenght;
 					++b_postLenght[site][postId];
 					++b_wordCount[site][word];
@@ -308,7 +320,7 @@ void loadPostsHistory(string site)
 				string word;
 				while(ss >> word)
 				{
-					word=boost::algorithm::to_lower(word);
+					boost::algorithm::to_lower(word);
 					++stl_wordCount[site][word];
 				}
 			}
@@ -345,7 +357,7 @@ void loadPostsHistory_boost(string site)
 				string word;
 				while(ss >> word)
 				{
-					word=boost::algorithm::to_lower(word);
+					boost::algorithm::to_lower(word);
 					++b_wordCount[site][word];
 				}
 			}
@@ -382,10 +394,16 @@ void loadComments(string site)
 				stringstream ss;
 				ss.imbue(std::locale(std::locale(), new letter_only())); //enable reading only letters!
 				ss << ait->value();
+				std::string str(ss.str());
+				std::replace(str.begin(), str.end(), '\\', ' '); 
+				std::replace(str.begin(), str.end(), '[', ' '); 
+				std::replace(str.begin(), str.end(), ']', ' '); 
+				std::replace(str.begin(), str.end(), '^', ' ');
+				ss.str(str);				
 				string word;
 				while(ss >> word)
 				{
-					word=boost::algorithm::to_lower(word);
+					boost::algorithm::to_lower(word);
 					++stl_wordCount[site][word];
 				}
 			}
@@ -419,10 +437,16 @@ void loadComments_boost(string site)
 				stringstream ss;
 				ss.imbue(std::locale(std::locale(), new letter_only())); //enable reading only letters!
 				ss << ait->value();
+				std::string str(ss.str());
+				std::replace(str.begin(), str.end(), '\\', ' '); 
+				std::replace(str.begin(), str.end(), '[', ' '); 
+				std::replace(str.begin(), str.end(), ']', ' '); 
+				std::replace(str.begin(), str.end(), '^', ' '); 
+				ss.str(str);				
 				string word;
 				while(ss >> word)
 				{
-					word=boost::algorithm::to_lower(word);
+					boost::algorithm::to_lower(word);
 					++b_wordCount[site][word];
 				}
 			}
@@ -1036,7 +1060,7 @@ void writeBadges(string site)
 }
 void writeBadges_boost(string site)
 {
-	string filename1="UserBadges_"+site+"_boost.csv";
+	string filename1="csv/UserBadges_"+site+"_boost.csv";
 	ofstream csvfile_userBadges (filename1.c_str());
 	string filename2="UserBadgeCount_"+site+"_boost.csv";
 	ofstream csvfile_userBadgeCount (filename2.c_str());
@@ -1078,8 +1102,8 @@ int main( int argc, char ** argv )
 	string strtime=string(ctime (&rawtime));
 	string s2 = strtime.substr(0,24);
 	replace( s2.begin(), s2.end(), ':', '-');
-	string filename="Log "+s2+".log";
-	string filenamet="Log "+s2+"_t.log";
+	string filename="./logs/Log "+s2+".log";
+	string filenamet="./logs/Log "+s2+"_t.log";
 	ofstream log (filename.c_str());
 	ofstream logtime (filenamet.c_str());
 	log<<"Site;Container;Virtual Mem [kB];RAM [kB];CPU [%]"<<endl;
@@ -1090,8 +1114,8 @@ int main( int argc, char ** argv )
 	loadPosts(fromSite);
 	//cout<<logUse(fromSite,"STL")<<endl;
 	log<<fromSite<<";"<<"STL"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
-	loadPostsHistory(fromSite);
-	log<<fromSite<<";"<<"STL"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
+	//loadPostsHistory(fromSite);
+	//log<<fromSite<<";"<<"STL"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 	loadComments(fromSite);
 	log<<fromSite<<";"<<"STL"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 	loadUsers(fromSite);
@@ -1137,8 +1161,8 @@ int main( int argc, char ** argv )
 	begin = clock();
 	loadPosts_boost(fromSite);
 	log<<fromSite<<";"<<"Boost"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
-	loadPostsHistory_boost(fromSite);
-	log<<fromSite<<";"<<"Boost"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
+	//loadPostsHistory_boost(fromSite);
+	//log<<fromSite<<";"<<"Boost"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 	loadComments_boost(fromSite);
 	log<<fromSite<<";"<<"Boost"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 	loadUsers_boost(fromSite);
@@ -1187,8 +1211,8 @@ int main( int argc, char ** argv )
 	fromSite="wordpress";
 	loadPosts(fromSite);
 	log<<fromSite<<";"<<"STL"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
-	loadPostsHistory(fromSite);
-	log<<fromSite<<";"<<"STL"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
+	//loadPostsHistory(fromSite);
+	//log<<fromSite<<";"<<"STL"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 	loadComments(fromSite);
 	log<<fromSite<<";"<<"STL"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 	loadUsers(fromSite);
@@ -1234,8 +1258,8 @@ int main( int argc, char ** argv )
 	begin = clock();
 	loadPosts_boost(fromSite);
 	log<<fromSite<<";"<<"Boost"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
-	loadPostsHistory_boost(fromSite);
-	log<<fromSite<<";"<<"Boost"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
+	//loadPostsHistory_boost(fromSite);
+	//log<<fromSite<<";"<<"Boost"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 	loadComments_boost(fromSite);
 	log<<fromSite<<";"<<"Boost"<<";"<<getVMValue()<<";"<<getRAMValue()<<";"<<getCPUUsage()<<endl;
 	loadUsers_boost(fromSite);
