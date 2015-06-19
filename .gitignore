@@ -27,5 +27,9 @@
 *.out
 *.app
 
-./t1BigData/serverfault/
-./t1BigData/wordpress/
+*.cpp~
+
+t1BigData/serverfault/*
+t1BigData/wordpress/*
+t2BigData/Winnow2/serverfault/*
+t2BigData/Winnow2/wordpress/*
